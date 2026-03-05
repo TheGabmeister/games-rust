@@ -1,3 +1,5 @@
+use bevy::prelude::*;
+
 fn main() {
-    println!("hi there");
+    App::new().run();
 }
