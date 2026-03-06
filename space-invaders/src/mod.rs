@@ -1,3 +1,4 @@
+#[path = "entities.rs"]
 pub mod entities;
 
 use entities::{

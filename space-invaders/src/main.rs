@@ -1,3 +1,4 @@
+#[path = "mod.rs"]
 mod game;
 
 use game::{Game, SCREEN_HEIGHT, SCREEN_WIDTH};
