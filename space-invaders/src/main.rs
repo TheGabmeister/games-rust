@@ -1,16 +1,25 @@
+mod game;
+
+use game::{Game, SCREEN_HEIGHT, SCREEN_WIDTH};
 use macroquad::prelude::*;
 
-#[macroquad::main("BasicShapes")]
+fn window_conf() -> Conf {
+    Conf {
+        window_title: "Space Invaders".to_owned(),
+        window_width: SCREEN_WIDTH as i32,
+        window_height: SCREEN_HEIGHT as i32,
+        high_dpi: true,
+        ..Default::default()
+    }
+}
+
+#[macroquad::main(window_conf)]
 async fn main() {
+    let mut game = Game::new();
+
     loop {
-        clear_background(RED);
-
-        draw_line(40.0, 40.0, 100.0, 200.0, 15.0, BLUE);
-        draw_rectangle(screen_width() / 2.0 - 60.0, 100.0, 120.0, 60.0, GREEN);
-        draw_circle(screen_width() - 30.0, screen_height() - 30.0, 15.0, YELLOW);
-
-        draw_text("IT WORKS!", 20.0, 20.0, 30.0, DARKGRAY);
-
-        next_frame().await
+        game.update();
+        game.draw();
+        next_frame().await;
     }
 }
