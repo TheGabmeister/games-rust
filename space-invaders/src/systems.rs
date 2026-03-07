@@ -1,109 +1,18 @@
-#[path = "entities.rs"]
-pub mod entities;
-
-use entities::{
+use crate::game::entities::{
     BUNKER_COLS, BUNKER_ROWS, Bullet, BulletOwner, Bunker, INVADER_COLS, INVADER_ROWS, Invader,
-    MysteryShip, Player,
+    MysteryShip,
+};
+use crate::game::state::{
+    BULLET_HEIGHT, BULLET_WIDTH, DEFEAT_LINE, Game, GameState, INVADER_BULLET_SPEED,
+    INVADER_DROP_DISTANCE, INVADER_STEP_X, LIFE_LOST_DELAY, MAX_INVADER_BULLETS, MYSTERY_HEIGHT,
+    MYSTERY_SPEED, MYSTERY_WIDTH, MYSTERY_Y, PLAYER_BULLET_SPEED, PLAYFIELD_PADDING, SCREEN_HEIGHT,
+    SCREEN_WIDTH, next_invader_shot_cooldown, next_mystery_spawn_delay, random_bonus_score,
+    spawn_bunkers, wave_spawn_layout,
 };
 use macroquad::{prelude::*, rand::gen_range};
 
-pub const SCREEN_WIDTH: f32 = 960.0;
-pub const SCREEN_HEIGHT: f32 = 720.0;
-
-const PLAYFIELD_PADDING: f32 = 40.0;
-const PLAYER_WIDTH: f32 = 48.0;
-const PLAYER_HEIGHT: f32 = 24.0;
-const PLAYER_Y: f32 = SCREEN_HEIGHT - 62.0;
-const PLAYER_SPEED: f32 = 380.0;
-
-const BULLET_WIDTH: f32 = 4.0;
-const BULLET_HEIGHT: f32 = 14.0;
-const PLAYER_BULLET_SPEED: f32 = -520.0;
-const INVADER_BULLET_SPEED: f32 = 260.0;
-const MAX_INVADER_BULLETS: usize = 3;
-
-const INVADER_WIDTH: f32 = 34.0;
-const INVADER_HEIGHT: f32 = 24.0;
-const INVADER_X_GAP: f32 = 16.0;
-const INVADER_Y_GAP: f32 = 14.0;
-const INVADER_START_X: f32 = 86.0;
-const INVADER_BASE_START_Y: f32 = 94.0;
-const INVADER_WAVE_Y_STEP: f32 = 12.0;
-const INVADER_WAVE_Y_MAX_OFFSET: f32 = 120.0;
-const INVADER_STEP_X: f32 = 12.0;
-const INVADER_DROP_DISTANCE: f32 = 18.0;
-
-const BUNKER_COUNT: usize = 4;
-const BUNKER_CELL_SIZE: f32 = 7.0;
-const BUNKER_Y: f32 = SCREEN_HEIGHT - 190.0;
-
-const LIFE_LOST_DELAY: f32 = 1.0;
-const DEFEAT_LINE: f32 = PLAYER_Y + 6.0;
-
-const MYSTERY_WIDTH: f32 = 56.0;
-const MYSTERY_HEIGHT: f32 = 22.0;
-const MYSTERY_Y: f32 = 46.0;
-const MYSTERY_SPEED: f32 = 145.0;
-
-#[derive(Clone, Debug, PartialEq)]
-pub enum GameState {
-    Start,
-    Playing,
-    LifeLost { timer: f32 },
-    GameOver,
-}
-
-pub struct Game {
-    pub state: GameState,
-    pub score: u32,
-    pub lives: i32,
-    pub wave: u32,
-    pub player: Player,
-    pub invaders: Vec<Invader>,
-    pub bunkers: Vec<Bunker>,
-    pub mystery_ship: Option<MysteryShip>,
-    player_bullet: Option<Bullet>,
-    invader_bullets: Vec<Bullet>,
-    swarm_direction: f32,
-    swarm_timer: f32,
-    invader_shot_timer: f32,
-    invader_shot_cooldown: f32,
-    mystery_spawn_timer: f32,
-}
-
 impl Game {
-    pub fn new() -> Self {
-        let player_x = (SCREEN_WIDTH - PLAYER_WIDTH) * 0.5;
-        let mut game = Self {
-            state: GameState::Start,
-            score: 0,
-            lives: 3,
-            wave: 1,
-            player: Player::new(
-                player_x,
-                PLAYER_Y,
-                PLAYER_WIDTH,
-                PLAYER_HEIGHT,
-                PLAYER_SPEED,
-            ),
-            invaders: Vec::new(),
-            bunkers: spawn_bunkers(),
-            mystery_ship: None,
-            player_bullet: None,
-            invader_bullets: Vec::new(),
-            swarm_direction: 1.0,
-            swarm_timer: 0.0,
-            invader_shot_timer: 0.0,
-            invader_shot_cooldown: next_invader_shot_cooldown(INVADER_ROWS * INVADER_COLS),
-            mystery_spawn_timer: next_mystery_spawn_delay(),
-        };
-        game.spawn_wave();
-        game
-    }
-
-    pub fn update(&mut self) {
-        let dt = get_frame_time();
-
+    pub fn update_fixed(&mut self, dt: f32) {
         match self.state {
             GameState::Start => {
                 if is_key_pressed(KeyCode::Enter) {
@@ -136,18 +45,6 @@ impl Game {
                 }
             }
         }
-    }
-
-    pub fn draw(&self) {
-        clear_background(BLACK);
-        self.draw_hud();
-        self.draw_defeat_line();
-        self.draw_player();
-        self.draw_invaders();
-        self.draw_bullets();
-        self.draw_bunkers();
-        self.draw_mystery_ship();
-        self.draw_overlay();
     }
 
     fn update_player(&mut self, dt: f32) {
@@ -256,13 +153,13 @@ impl Game {
             return;
         }
 
-        if let Some(ship) = self.mystery_ship {
-            if bullet.rect.overlaps(&ship.rect) {
-                self.score += ship.score_value;
-                self.mystery_ship = None;
-                self.mystery_spawn_timer = next_mystery_spawn_delay();
-                return;
-            }
+        if let Some(ship) = self.mystery_ship
+            && bullet.rect.overlaps(&ship.rect)
+        {
+            self.score += ship.score_value;
+            self.mystery_ship = None;
+            self.mystery_spawn_timer = next_mystery_spawn_delay();
+            return;
         }
 
         if let Some(hit_idx) = self
@@ -373,10 +270,6 @@ impl Game {
         self.mystery_spawn_timer = next_mystery_spawn_delay();
     }
 
-    fn reset_player_position(&mut self) {
-        self.player.rect.x = (SCREEN_WIDTH - PLAYER_WIDTH) * 0.5;
-    }
-
     fn register_player_hit(&mut self) {
         if !matches!(self.state, GameState::Playing) {
             return;
@@ -405,215 +298,15 @@ impl Game {
         self.spawn_wave();
         self.reset_player_position();
     }
-
-    fn draw_hud(&self) {
-        let hud_text = format!(
-            "Score: {}    Lives: {}    Wave: {}",
-            self.score, self.lives, self.wave
-        );
-        draw_text(&hud_text, 24.0, 30.0, 30.0, GREEN);
-    }
-
-    fn draw_defeat_line(&self) {
-        draw_line(
-            PLAYFIELD_PADDING,
-            DEFEAT_LINE,
-            SCREEN_WIDTH - PLAYFIELD_PADDING,
-            DEFEAT_LINE,
-            1.5,
-            DARKGRAY,
-        );
-    }
-
-    fn draw_player(&self) {
-        if self.lives <= 0 {
-            return;
-        }
-
-        draw_rectangle(
-            self.player.rect.x,
-            self.player.rect.y,
-            self.player.rect.w,
-            self.player.rect.h,
-            WHITE,
-        );
-        draw_rectangle(
-            self.player.rect.x + self.player.rect.w * 0.4,
-            self.player.rect.y - 8.0,
-            self.player.rect.w * 0.2,
-            8.0,
-            WHITE,
-        );
-    }
-
-    fn draw_invaders(&self) {
-        for invader in &self.invaders {
-            let body_color = match invader.row {
-                0 => YELLOW,
-                1 | 2 => ORANGE,
-                _ => LIME,
-            };
-
-            draw_rectangle(
-                invader.rect.x,
-                invader.rect.y,
-                invader.rect.w,
-                invader.rect.h,
-                body_color,
-            );
-            draw_rectangle(invader.rect.x + 6.0, invader.rect.y + 6.0, 6.0, 6.0, BLACK);
-            draw_rectangle(
-                invader.rect.x + invader.rect.w - 12.0,
-                invader.rect.y + 6.0,
-                6.0,
-                6.0,
-                BLACK,
-            );
-        }
-    }
-
-    fn draw_bullets(&self) {
-        if let Some(bullet) = self.player_bullet {
-            draw_rectangle(
-                bullet.rect.x,
-                bullet.rect.y,
-                bullet.rect.w,
-                bullet.rect.h,
-                WHITE,
-            );
-        }
-
-        for bullet in &self.invader_bullets {
-            draw_rectangle(
-                bullet.rect.x,
-                bullet.rect.y,
-                bullet.rect.w,
-                bullet.rect.h,
-                RED,
-            );
-        }
-    }
-
-    fn draw_bunkers(&self) {
-        for bunker in &self.bunkers {
-            for row in 0..BUNKER_ROWS {
-                for col in 0..BUNKER_COLS {
-                    if bunker.cells[row][col] {
-                        draw_rectangle(
-                            bunker.position.x + col as f32 * bunker.cell_size,
-                            bunker.position.y + row as f32 * bunker.cell_size,
-                            bunker.cell_size,
-                            bunker.cell_size,
-                            GREEN,
-                        );
-                    }
-                }
-            }
-        }
-    }
-
-    fn draw_mystery_ship(&self) {
-        if let Some(ship) = self.mystery_ship {
-            draw_rectangle(ship.rect.x, ship.rect.y, ship.rect.w, ship.rect.h, RED);
-            draw_rectangle(
-                ship.rect.x + 10.0,
-                ship.rect.y - 6.0,
-                ship.rect.w - 20.0,
-                6.0,
-                RED,
-            );
-        }
-    }
-
-    fn draw_overlay(&self) {
-        match self.state {
-            GameState::Start => {
-                draw_centered_text("SPACE INVADERS", SCREEN_HEIGHT * 0.40, 64.0, WHITE);
-                draw_centered_text(
-                    "Arrow/A,D to move | Space to fire",
-                    SCREEN_HEIGHT * 0.50,
-                    30.0,
-                    GRAY,
-                );
-                draw_centered_text("Press Enter to Start", SCREEN_HEIGHT * 0.58, 38.0, GREEN);
-            }
-            GameState::LifeLost { .. } => {
-                draw_centered_text("Life Lost", SCREEN_HEIGHT * 0.50, 52.0, ORANGE);
-            }
-            GameState::GameOver => {
-                draw_centered_text("GAME OVER", SCREEN_HEIGHT * 0.45, 72.0, RED);
-                draw_centered_text(
-                    &format!("Final Score: {}", self.score),
-                    SCREEN_HEIGHT * 0.54,
-                    38.0,
-                    WHITE,
-                );
-                draw_centered_text("Press Enter to Restart", SCREEN_HEIGHT * 0.62, 34.0, GREEN);
-            }
-            GameState::Playing => {}
-        }
-    }
 }
 
-fn draw_centered_text(text: &str, y: f32, font_size: f32, color: Color) {
-    let metrics = measure_text(text, None, font_size as u16, 1.0);
-    let x = (SCREEN_WIDTH - metrics.width) * 0.5;
-    draw_text(text, x, y, font_size, color);
-}
-
-fn spawn_bunkers() -> Vec<Bunker> {
-    let bunker_width = BUNKER_COLS as f32 * BUNKER_CELL_SIZE;
-    let available_width = SCREEN_WIDTH - PLAYFIELD_PADDING * 2.0;
-    let total_bunker_width = bunker_width * BUNKER_COUNT as f32;
-    let gap = (available_width - total_bunker_width) / (BUNKER_COUNT as f32 - 1.0);
-
-    (0..BUNKER_COUNT)
-        .map(|index| {
-            let x = PLAYFIELD_PADDING + index as f32 * (bunker_width + gap);
-            Bunker::new(vec2(x, BUNKER_Y), BUNKER_CELL_SIZE)
-        })
-        .collect()
-}
-
-pub fn wave_spawn_layout(wave: u32) -> Vec<Invader> {
-    let lowered_offset =
-        ((wave.saturating_sub(1)) as f32 * INVADER_WAVE_Y_STEP).min(INVADER_WAVE_Y_MAX_OFFSET);
-    let start_y = INVADER_BASE_START_Y + lowered_offset;
-
-    let mut invaders = Vec::with_capacity(INVADER_ROWS * INVADER_COLS);
-    for row in 0..INVADER_ROWS {
-        for col in 0..INVADER_COLS {
-            let x = INVADER_START_X + col as f32 * (INVADER_WIDTH + INVADER_X_GAP);
-            let y = start_y + row as f32 * (INVADER_HEIGHT + INVADER_Y_GAP);
-            invaders.push(Invader::new(
-                x,
-                y,
-                INVADER_WIDTH,
-                INVADER_HEIGHT,
-                row,
-                col,
-                invader_score_for_row(row),
-            ));
-        }
-    }
-    invaders
-}
-
-pub fn invader_score_for_row(row: usize) -> u32 {
-    match row {
-        0 => 30,
-        1 | 2 => 20,
-        _ => 10,
-    }
-}
-
-pub fn invader_move_interval(alive_count: usize) -> f32 {
+fn invader_move_interval(alive_count: usize) -> f32 {
     let clamped_alive = alive_count.clamp(1, INVADER_ROWS * INVADER_COLS) as f32;
     let ratio = (clamped_alive - 1.0) / ((INVADER_ROWS * INVADER_COLS - 1) as f32);
     0.08 + ratio * 0.62
 }
 
-pub fn invader_edge_step(
+fn invader_edge_step(
     invaders: &[Invader],
     direction: f32,
     left_bound: f32,
@@ -641,7 +334,7 @@ pub fn invader_edge_step(
     }
 }
 
-pub fn bottom_shooter_indices(invaders: &[Invader]) -> Vec<usize> {
+fn bottom_shooter_indices(invaders: &[Invader]) -> Vec<usize> {
     let mut bottom_by_col: [Option<(usize, f32)>; INVADER_COLS] = [None; INVADER_COLS];
 
     for (idx, invader) in invaders.iter().enumerate() {
@@ -662,7 +355,7 @@ pub fn bottom_shooter_indices(invaders: &[Invader]) -> Vec<usize> {
         .collect()
 }
 
-pub fn damage_bunker_cells(
+fn damage_bunker_cells(
     cells: &mut [[bool; BUNKER_COLS]; BUNKER_ROWS],
     hit_col: i32,
     hit_row: i32,
@@ -693,7 +386,7 @@ pub fn damage_bunker_cells(
     removed
 }
 
-pub fn invaders_reached_defeat_line(invaders: &[Invader], defeat_line: f32) -> bool {
+fn invaders_reached_defeat_line(invaders: &[Invader], defeat_line: f32) -> bool {
     invaders
         .iter()
         .any(|invader| invader.rect.y + invader.rect.h >= defeat_line)
@@ -720,29 +413,13 @@ fn apply_bullet_to_bunker(bunker: &mut Bunker, bullet: &Bullet) -> bool {
     damage_bunker_cells(&mut bunker.cells, hit_col, hit_row, bullet.owner) > 0
 }
 
-fn next_invader_shot_cooldown(alive_count: usize) -> f32 {
-    let pressure = (alive_count.clamp(1, INVADER_ROWS * INVADER_COLS) as f32)
-        / (INVADER_ROWS * INVADER_COLS) as f32;
-    let base = 0.45 + pressure * 0.85;
-    base + gen_range(0.0, 0.35)
-}
-
-fn next_mystery_spawn_delay() -> f32 {
-    gen_range(10.0, 18.0)
-}
-
-fn random_bonus_score() -> u32 {
-    match gen_range(0, 4) {
-        0 => 50,
-        1 => 100,
-        2 => 150,
-        _ => 300,
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::game::state::{
+        DEFEAT_LINE, INVADER_HEIGHT, INVADER_WIDTH, PLAYFIELD_PADDING, SCREEN_WIDTH,
+        wave_spawn_layout,
+    };
 
     #[test]
     fn wave_spawn_layout_has_expected_count_and_scores() {
@@ -812,7 +489,7 @@ mod tests {
 
     #[test]
     fn bunker_damage_mutates_mask() {
-        let mut bunker = Bunker::new(vec2(0.0, 0.0), BUNKER_CELL_SIZE);
+        let mut bunker = Bunker::new(vec2(0.0, 0.0), crate::game::state::BUNKER_CELL_SIZE);
         let removed = damage_bunker_cells(&mut bunker.cells, 4, 2, BulletOwner::Invader);
 
         assert!(removed > 0);
