@@ -1,17 +1,39 @@
 use hecs::{Entity, World};
-use macroquad::audio::play_sound_once;
 use macroquad::prelude::*;
 
-use crate::assets::AssetManager;
-use crate::collision::{Aabb, intersects};
+use crate::assets::{AssetManager, TextureId};
 use crate::ecs::{
-    Bouncer, Collider, Name, PLAYER_SPEED, Sprite, Transform, Velocity, spawn_template_entities,
+    PLAYER_SPEED, PreviousTransform, RenderLayer, RenderSpace, Sprite, Transform,
+    spawn_template_entities,
 };
+use crate::render::CameraRig;
+use crate::systems::input::InputState;
+use crate::systems::movement::WorldBounds;
+use crate::systems::{FixedTimestepScheduler, audio, collision, input, movement, ui};
+
+const WORLD_WIDTH: f32 = 960.0;
+const WORLD_HEIGHT: f32 = 540.0;
+const FIXED_DT: f32 = 1.0 / 60.0;
+const MAX_FRAME_DT: f32 = 0.25;
+const MAX_SIM_STEPS_PER_FRAME: u32 = 8;
+
+#[derive(Clone, Copy)]
+struct DrawItem {
+    position: Vec2,
+    size: Vec2,
+    color: Color,
+    texture: Option<TextureId>,
+    layer: RenderLayer,
+    space: RenderSpace,
+}
 
 pub struct GameData {
     pub world: World,
     pub assets: AssetManager,
     player: Entity,
+    scheduler: FixedTimestepScheduler,
+    world_bounds: WorldBounds,
+    camera: CameraRig,
     last_collision_notes: Vec<String>,
     was_colliding: bool,
     startup_warning: Option<String>,
@@ -21,186 +43,130 @@ impl GameData {
     pub fn new(assets: AssetManager, startup_warning: Option<String>) -> Self {
         let mut world = World::new();
         let player = spawn_template_entities(&mut world);
+        let world_bounds = WorldBounds::from_size(vec2(WORLD_WIDTH, WORLD_HEIGHT));
 
         Self {
             world,
             assets,
             player,
+            scheduler: FixedTimestepScheduler::new(FIXED_DT, MAX_FRAME_DT, MAX_SIM_STEPS_PER_FRAME),
+            world_bounds,
+            camera: CameraRig::new(world_bounds.size()),
             last_collision_notes: Vec::new(),
             was_colliding: false,
             startup_warning,
         }
     }
 
-    pub fn update_playing(&mut self) {
-        self.apply_player_input();
-        self.run_movement_system();
-        self.run_collision_system();
+    pub fn update_playing(&mut self, frame_dt: f32) {
+        let input = input::sample_input();
+        if input.blip_pressed {
+            audio::play_blip(&self.assets);
+        }
 
-        if is_key_pressed(KeyCode::Space) {
-            if let Some(sound) = self.assets.sound("blip") {
-                play_sound_once(sound);
-            }
+        let steps = self.scheduler.begin_frame(frame_dt);
+        for _ in 0..steps {
+            self.run_fixed_step(input);
         }
     }
 
     pub fn draw_world(&self) {
-        let mut query = self.world.query::<(&Transform, &Sprite)>();
-        for (transform, sprite) in query.iter() {
-            if let Some(texture_name) = &sprite.texture {
-                if let Some(texture) = self.assets.texture(texture_name) {
-                    draw_texture_ex(
-                        texture,
-                        transform.position.x,
-                        transform.position.y,
-                        WHITE,
-                        DrawTextureParams {
-                            dest_size: Some(sprite.size),
-                            ..Default::default()
-                        },
-                    );
-                    continue;
-                }
-            }
+        let mut draw_items = self.collect_draw_items(self.scheduler.alpha());
+        draw_items.sort_by_key(|item| item.layer.0);
 
-            draw_rectangle(
-                transform.position.x,
-                transform.position.y,
-                sprite.size.x,
-                sprite.size.y,
-                sprite.color,
-            );
-        }
+        self.camera.begin_world_pass();
+        self.draw_items_for_space(&draw_items, RenderSpace::World);
+
+        self.camera.begin_screen_pass();
+        self.draw_items_for_space(&draw_items, RenderSpace::Screen);
     }
 
     pub fn draw_ui(&self) {
-        draw_text(
-            "Move: WASD/Arrows | Pause: P/Esc | Toggle Debug: F3 | Blip: Space",
-            16.0,
-            28.0,
-            24.0,
-            WHITE,
+        self.camera.begin_screen_pass();
+        ui::draw_hud(
+            &self.last_collision_notes,
+            self.startup_warning.as_deref(),
+            self.assets.warnings(),
         );
-
-        let mut text_y = 56.0;
-        for note in &self.last_collision_notes {
-            draw_text(note, 16.0, text_y, 24.0, YELLOW);
-            text_y += 24.0;
-        }
-
-        if let Some(warning) = &self.startup_warning {
-            draw_text(warning, 16.0, screen_height() - 22.0, 20.0, RED);
-        }
-
-        let mut warning_y = screen_height() - 48.0;
-        for warning in self.assets.warnings().iter().take(2) {
-            draw_text(warning, 16.0, warning_y, 20.0, ORANGE);
-            warning_y -= 24.0;
-        }
     }
 
-    fn apply_player_input(&mut self) {
-        let mut direction = Vec2::ZERO;
-
-        if is_key_down(KeyCode::A) || is_key_down(KeyCode::Left) {
-            direction.x -= 1.0;
-        }
-        if is_key_down(KeyCode::D) || is_key_down(KeyCode::Right) {
-            direction.x += 1.0;
-        }
-        if is_key_down(KeyCode::W) || is_key_down(KeyCode::Up) {
-            direction.y -= 1.0;
-        }
-        if is_key_down(KeyCode::S) || is_key_down(KeyCode::Down) {
-            direction.y += 1.0;
-        }
-
-        if direction.length_squared() > 0.0 {
-            direction = direction.normalize();
-        }
-
-        if let Ok(mut velocity) = self.world.get::<&mut Velocity>(self.player) {
-            velocity.value = direction * PLAYER_SPEED;
-        }
+    pub fn draw_paused_overlay(&self) {
+        self.camera.begin_screen_pass();
+        ui::draw_paused_overlay();
     }
 
-    fn run_movement_system(&mut self) {
-        let dt = get_frame_time();
+    fn run_fixed_step(&mut self, input: InputState) {
+        movement::snapshot_previous_transforms(&mut self.world);
+        input::apply_player_velocity(&mut self.world, self.player, input, PLAYER_SPEED);
+        movement::integrate(&mut self.world, self.scheduler.fixed_dt());
+        movement::bounce(&mut self.world, self.world_bounds);
+        movement::clamp_player(&mut self.world, self.player, self.world_bounds);
 
-        for (transform, velocity) in self.world.query_mut::<(&mut Transform, &Velocity)>() {
-            transform.position += velocity.value * dt;
+        let report =
+            collision::detect_player_collisions(&self.world, self.player, self.was_colliding);
+        self.last_collision_notes = report.notes;
+        if report.started_colliding {
+            audio::play_hit(&self.assets);
         }
+        self.was_colliding = report.is_colliding;
+    }
 
-        for (transform, velocity, collider, _) in
-            self.world
-                .query_mut::<(&mut Transform, &mut Velocity, &Collider, &Bouncer)>()
-        {
-            if transform.position.x <= 0.0 {
-                transform.position.x = 0.0;
-                velocity.value.x = velocity.value.x.abs();
-            } else if transform.position.x + collider.size.x >= screen_width() {
-                transform.position.x = (screen_width() - collider.size.x).max(0.0);
-                velocity.value.x = -velocity.value.x.abs();
-            }
-
-            if transform.position.y <= 0.0 {
-                transform.position.y = 0.0;
-                velocity.value.y = velocity.value.y.abs();
-            } else if transform.position.y + collider.size.y >= screen_height() {
-                transform.position.y = (screen_height() - collider.size.y).max(0.0);
-                velocity.value.y = -velocity.value.y.abs();
-            }
-        }
-
-        let mut player_query = self
+    fn collect_draw_items(&self, alpha: f32) -> Vec<DrawItem> {
+        let mut items = Vec::new();
+        let mut query = self
             .world
-            .query_one::<(&mut Transform, &Collider)>(self.player);
-        if let Ok((transform, collider)) = player_query.get() {
-            transform.position.x = transform
-                .position
-                .x
-                .clamp(0.0, (screen_width() - collider.size.x).max(0.0));
-            transform.position.y = transform
-                .position
-                .y
-                .clamp(0.0, (screen_height() - collider.size.y).max(0.0));
+            .query::<(&Transform, Option<&PreviousTransform>, &Sprite)>();
+
+        for (transform, previous, sprite) in query.iter() {
+            let position = match previous {
+                Some(previous) => previous.position.lerp(transform.position, alpha),
+                None => transform.position,
+            };
+
+            items.push(DrawItem {
+                position,
+                size: sprite.size,
+                color: sprite.color,
+                texture: sprite.texture,
+                layer: sprite.layer,
+                space: sprite.space,
+            });
+        }
+
+        items
+    }
+
+    fn draw_items_for_space(&self, items: &[DrawItem], space: RenderSpace) {
+        for item in items {
+            if item.space == space {
+                self.draw_item(*item);
+            }
         }
     }
 
-    fn run_collision_system(&mut self) {
-        self.last_collision_notes.clear();
-
-        let Some(player_aabb) = self.entity_aabb(self.player) else {
+    fn draw_item(&self, item: DrawItem) {
+        if let Some(texture_id) = item.texture
+            && let Some(texture) = self.assets.texture(texture_id)
+        {
+            draw_texture_ex(
+                texture,
+                item.position.x,
+                item.position.y,
+                WHITE,
+                DrawTextureParams {
+                    dest_size: Some(item.size),
+                    ..Default::default()
+                },
+            );
             return;
-        };
-
-        for (entity, name, transform, collider) in self
-            .world
-            .query_mut::<(Entity, &Name, &Transform, &Collider)>()
-        {
-            if entity == self.player {
-                continue;
-            }
-
-            let other = Aabb::from_position_size(transform.position, collider.size);
-            if intersects(player_aabb, other) {
-                self.last_collision_notes
-                    .push(format!("Player collides with {}", name.0));
-            }
         }
 
-        let colliding = !self.last_collision_notes.is_empty();
-        if colliding && !self.was_colliding {
-            if let Some(sound) = self.assets.sound("hit") {
-                play_sound_once(sound);
-            }
-        }
-        self.was_colliding = colliding;
-    }
-
-    fn entity_aabb(&self, entity: Entity) -> Option<Aabb> {
-        let transform = self.world.get::<&Transform>(entity).ok()?;
-        let collider = self.world.get::<&Collider>(entity).ok()?;
-        Some(Aabb::from_position_size(transform.position, collider.size))
+        draw_rectangle(
+            item.position.x,
+            item.position.y,
+            item.size.x,
+            item.size.y,
+            item.color,
+        );
     }
 }

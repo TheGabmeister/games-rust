@@ -3,8 +3,10 @@ mod collision;
 mod debug;
 mod ecs;
 mod game;
+mod render;
 mod state_machine;
 mod states;
+mod systems;
 
 use assets::{AssetManager, DEFAULT_ASSET_MANIFEST};
 use debug::{debug_enabled, draw_debug_overlay, toggle_debug};
@@ -39,7 +41,7 @@ async fn main() {
 
         clear_background(Color::from_rgba(20, 23, 33, 255));
 
-        state_machine.update(&mut game_data);
+        state_machine.update(&mut game_data, get_frame_time());
         state_machine.draw(&game_data);
 
         if debug_enabled() {

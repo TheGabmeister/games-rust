@@ -8,7 +8,7 @@ where
 {
     fn on_enter(&mut self, _ctx: &mut C) {}
     fn on_exit(&mut self, _ctx: &mut C) {}
-    fn update(&mut self, ctx: &mut C) -> Option<S>;
+    fn update(&mut self, ctx: &mut C, frame_dt: f32) -> Option<S>;
     fn draw(&self, ctx: &C);
 }
 
@@ -52,7 +52,7 @@ where
         self.current
     }
 
-    pub fn update(&mut self, ctx: &mut C) {
+    pub fn update(&mut self, ctx: &mut C, frame_dt: f32) {
         let Some(current) = self.current else {
             return;
         };
@@ -60,17 +60,17 @@ where
         let next = self
             .states
             .get_mut(&current)
-            .and_then(|state| state.update(ctx));
+            .and_then(|state| state.update(ctx, frame_dt));
         if let Some(next_state) = next {
             self.transition(next_state, ctx);
         }
     }
 
     pub fn draw(&self, ctx: &C) {
-        if let Some(current) = self.current {
-            if let Some(state) = self.states.get(&current) {
-                state.draw(ctx);
-            }
+        if let Some(current) = self.current
+            && let Some(state) = self.states.get(&current)
+        {
+            state.draw(ctx);
         }
     }
 
@@ -79,10 +79,10 @@ where
             return;
         }
 
-        if let Some(current) = self.current {
-            if let Some(state) = self.states.get_mut(&current) {
-                state.on_exit(ctx);
-            }
+        if let Some(current) = self.current
+            && let Some(state) = self.states.get_mut(&current)
+        {
+            state.on_exit(ctx);
         }
 
         if let Some(state) = self.states.get_mut(&next) {
