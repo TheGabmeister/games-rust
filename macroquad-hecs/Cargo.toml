@@ -7,3 +7,4 @@ edition = "2024"
 macroquad = "0.4.14"
 hecs = "0.11.0"
 serde_json = "1.0.149"
+serde = { version = "1.0.228", features = ["derive"] }
