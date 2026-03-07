@@ -4,8 +4,8 @@ use crate::assets::AssetManager;
 use crate::debug::{draw_debug_ui, toggle_debug};
 use crate::entities::Entity;
 use crate::render::draw_entity;
-use crate::state::{GameState, StateMachine};
-use crate::systems::{check_collisions, clamp_to_screen, update_movement};
+use crate::state::GameState;
+use crate::systems::{check_collisions, clamp_to_screen};
 
 const PLAYER_SPEED: f32 = 220.0;
 const PLAYER_SIZE: Vec2 = vec2(48.0, 48.0);
@@ -13,8 +13,9 @@ const ENEMY_SIZE: Vec2 = vec2(48.0, 48.0);
 
 pub struct Game {
     pub entities: Vec<Entity>,
-    pub state: StateMachine,
+    pub state: GameState,
     pub assets: AssetManager,
+    pub quit: bool,
     next_id: u32,
 }
 
@@ -24,8 +25,9 @@ impl Game {
 
         let mut game = Self {
             entities: Vec::new(),
-            state: StateMachine::new(GameState::Playing),
+            state: GameState::Playing,
             assets,
+            quit: false,
             next_id: 0,
         };
 
@@ -54,14 +56,24 @@ impl Game {
     pub fn update(&mut self) {
         let dt = get_frame_time();
 
+        if is_key_pressed(KeyCode::Escape) {
+            self.quit = true;
+        }
         if is_key_pressed(KeyCode::F1) {
             toggle_debug();
         }
+        if is_key_pressed(KeyCode::P) {
+            match self.state {
+                GameState::Playing => self.state = GameState::Paused,
+                GameState::Paused  => self.state = GameState::Playing,
+                _ => {}
+            }
+        }
 
-        if self.state.is(&GameState::Playing) {
+        if self.state == GameState::Playing {
             self.handle_player_input();
             for entity in &mut self.entities {
-                update_movement(entity, dt);
+                entity.position += entity.velocity * dt;
                 clamp_to_screen(entity);
             }
             self.check_player_collision();
@@ -106,7 +118,7 @@ impl Game {
         if let Some(sound) = self.assets.sound("lose") {
             play_sound_once(sound);
         }
-        self.state.transition(GameState::GameOver);
+        self.state = GameState::GameOver;
     }
 
     pub fn draw(&self) {
@@ -116,16 +128,16 @@ impl Game {
             draw_entity(entity, &self.assets);
         }
 
-        if self.state.is(&GameState::GameOver) {
+        if self.state == GameState::Paused {
+            let msg = "PAUSED";
+            let sz = measure_text(msg, None, 60, 1.0);
+            draw_text(msg, screen_width() / 2.0 - sz.width / 2.0, screen_height() / 2.0, 60.0, WHITE);
+        }
+
+        if self.state == GameState::GameOver {
             let msg = "GAME OVER";
             let sz = measure_text(msg, None, 60, 1.0);
-            draw_text(
-                msg,
-                screen_width() / 2.0 - sz.width / 2.0,
-                screen_height() / 2.0,
-                60.0,
-                RED,
-            );
+            draw_text(msg, screen_width() / 2.0 - sz.width / 2.0, screen_height() / 2.0, 60.0, RED);
         }
 
         draw_debug_ui(&self.entities);

@@ -25,6 +25,9 @@ async fn main() {
 
     loop {
         game.update();
+        if game.quit {
+            break;
+        }
         game.draw();
         next_frame().await;
     }
