@@ -11,7 +11,9 @@ struct AssetConfig {
 
 #[derive(Deserialize)]
 struct AssetEntry {
-    name: String,
+    id: String,
+    #[allow(dead_code)]
+    name: String, // human-readable label, not used as a key
     path: String,
 }
 
@@ -35,7 +37,7 @@ impl AssetManager {
                 .await
                 .unwrap_or_else(|_| panic!("Failed to load texture: {}", entry.path));
             texture.set_filter(FilterMode::Nearest);
-            textures.insert(entry.name, texture);
+            textures.insert(entry.id, texture);
         }
 
         let mut sounds = HashMap::new();
@@ -43,7 +45,7 @@ impl AssetManager {
             let sound = load_sound(&entry.path)
                 .await
                 .unwrap_or_else(|_| panic!("Failed to load sound: {}", entry.path));
-            sounds.insert(entry.name, sound);
+            sounds.insert(entry.id, sound);
         }
 
         Self { textures, sounds }
