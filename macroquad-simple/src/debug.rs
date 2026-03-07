@@ -1,19 +1,8 @@
-use std::sync::atomic::{AtomicBool, Ordering};
 use macroquad::prelude::*;
 use crate::entities::Entity;
 
-static DEBUG: AtomicBool = AtomicBool::new(false);
-
-pub fn is_debug() -> bool {
-    DEBUG.load(Ordering::Relaxed)
-}
-
-pub fn toggle_debug() {
-    DEBUG.fetch_xor(true, Ordering::Relaxed);
-}
-
-pub fn draw_debug_ui(entities: &[Entity]) {
-    if !is_debug() {
+pub fn draw_debug_ui(entities: &[Entity], debug: bool) {
+    if !debug {
         return;
     }
 
@@ -46,7 +35,7 @@ pub fn draw_debug_ui(entities: &[Entity]) {
         let active_str = if e.active { "" } else { " [inactive]" };
         let label = format!(
             "#{} {}  pos({:.0},{:.0})  sz({:.0},{:.0}){}",
-            e.id, e.name, e.position.x, e.position.y, e.size.x, e.size.y, active_str
+            e.id, e.kind, e.position.x, e.position.y, e.size.x, e.size.y, active_str
         );
         draw_text(&label, PANEL_X + PAD, y, FONT_SIZE, WHITE);
     }

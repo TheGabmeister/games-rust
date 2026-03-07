@@ -1,9 +1,9 @@
 use macroquad::prelude::*;
 use crate::assets::AssetManager;
-use crate::debug::is_debug;
 use crate::entities::Entity;
+use crate::state::GameState;
 
-pub fn draw_entity(entity: &Entity, assets: &AssetManager) {
+pub fn draw_entity(entity: &Entity, assets: &AssetManager, debug: bool) {
     if !entity.active {
         return;
     }
@@ -28,7 +28,7 @@ pub fn draw_entity(entity: &Entity, assets: &AssetManager) {
     }
 
     // Hitbox overlay in debug mode.
-    if is_debug() {
+    if debug {
         draw_rectangle_lines(
             entity.position.x,
             entity.position.y,
@@ -38,4 +38,14 @@ pub fn draw_entity(entity: &Entity, assets: &AssetManager) {
             GREEN,
         );
     }
+}
+
+pub fn draw_overlay(state: &GameState) {
+    let (msg, color) = match state {
+        GameState::Paused   => ("PAUSED", WHITE),
+        GameState::GameOver => ("GAME OVER", RED),
+        GameState::Playing  => return,
+    };
+    let sz = measure_text(msg, None, 60, 1.0);
+    draw_text(msg, screen_width() / 2.0 - sz.width / 2.0, screen_height() / 2.0, 60.0, color);
 }
