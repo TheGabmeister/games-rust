@@ -1,6 +1,6 @@
 use hecs::{Entity, World};
+use macroquad::prelude::Rect;
 
-use crate::collision::{Aabb, intersects};
 use crate::ecs::{Collider, Name, Transform};
 
 #[derive(Debug, Default)]
@@ -15,7 +15,7 @@ pub fn detect_player_collisions(
     player: Entity,
     was_colliding: bool,
 ) -> CollisionReport {
-    let Some(player_aabb) = entity_aabb(world, player) else {
+    let Some(player_rect) = entity_rect(world, player) else {
         return CollisionReport::default();
     };
 
@@ -26,8 +26,14 @@ pub fn detect_player_collisions(
             continue;
         }
 
-        let other = Aabb::from_position_size(transform.position, collider.size);
-        if intersects(player_aabb, other) {
+        let other = Rect::new(
+            transform.position.x,
+            transform.position.y,
+            collider.size.x,
+            collider.size.y,
+        );
+
+        if player_rect.overlaps(&other) {
             notes.push(format!("Player collides with {}", name.0));
         }
     }
@@ -40,10 +46,15 @@ pub fn detect_player_collisions(
     }
 }
 
-fn entity_aabb(world: &World, entity: Entity) -> Option<Aabb> {
+fn entity_rect(world: &World, entity: Entity) -> Option<Rect> {
     let transform = world.get::<&Transform>(entity).ok()?;
     let collider = world.get::<&Collider>(entity).ok()?;
-    Some(Aabb::from_position_size(transform.position, collider.size))
+    Some(Rect::new(
+        transform.position.x,
+        transform.position.y,
+        collider.size.x,
+        collider.size.y,
+    ))
 }
 
 #[cfg(test)]

@@ -1,5 +1,4 @@
 mod assets;
-mod collision;
 mod debug;
 mod ecs;
 mod game;
