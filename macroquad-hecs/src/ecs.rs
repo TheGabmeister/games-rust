@@ -3,8 +3,6 @@ use macroquad::prelude::*;
 
 use crate::assets::TextureId;
 
-pub const PLAYER_SPEED: f32 = 260.0;
-
 #[derive(Clone)]
 pub struct Name(pub String);
 

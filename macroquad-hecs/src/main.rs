@@ -1,4 +1,5 @@
 mod assets;
+mod config;
 mod debug;
 mod ecs;
 mod game;
@@ -14,7 +15,16 @@ use macroquad::prelude::*;
 use state_machine::StateMachine;
 use states::{AppState, PausedState, PlayingState};
 
-#[macroquad::main("Macroquad + hecs Template")]
+fn window_conf() -> Conf {
+    Conf {
+        window_title: "Macroquad + hecs Template".to_string(),
+        window_width: 800,
+        window_height: 600,
+        ..Default::default()
+    }
+}
+
+#[macroquad::main(window_conf)]
 async fn main() {
     let (assets, startup_warning) = match AssetManager::from_manifest(DEFAULT_ASSET_MANIFEST).await
     {

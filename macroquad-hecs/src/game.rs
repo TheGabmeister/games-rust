@@ -2,20 +2,16 @@ use hecs::{Entity, World};
 use macroquad::prelude::*;
 
 use crate::assets::{AssetManager, TextureId};
+use crate::config::{
+    FIXED_DT, MAX_FRAME_DT, MAX_SIM_STEPS_PER_FRAME, PLAYER_SPEED, WORLD_HEIGHT, WORLD_WIDTH,
+};
 use crate::ecs::{
-    PLAYER_SPEED, PreviousTransform, RenderLayer, RenderSpace, Sprite, Transform,
-    spawn_template_entities,
+    PreviousTransform, RenderLayer, RenderSpace, Sprite, Transform, spawn_template_entities,
 };
 use crate::render::CameraRig;
 use crate::systems::input::InputState;
 use crate::systems::movement::WorldBounds;
 use crate::systems::{FixedTimestepScheduler, audio, collision, input, movement, ui};
-
-const WORLD_WIDTH: f32 = 960.0;
-const WORLD_HEIGHT: f32 = 540.0;
-const FIXED_DT: f32 = 1.0 / 60.0;
-const MAX_FRAME_DT: f32 = 0.25;
-const MAX_SIM_STEPS_PER_FRAME: u32 = 8;
 
 #[derive(Clone, Copy)]
 struct DrawItem {
