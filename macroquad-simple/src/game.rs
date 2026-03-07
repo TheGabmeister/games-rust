@@ -1,4 +1,4 @@
-use macroquad::audio::play_sound_once;
+use macroquad::audio::{play_sound, play_sound_once, PlaySoundParams};
 use macroquad::prelude::*;
 use crate::assets::AssetManager;
 use crate::debug::draw_debug_ui;
@@ -44,6 +44,16 @@ impl Game {
         let enemy_pos = vec2(screen_width() * 0.7, screen_height() * 0.2);
         let enemy = Entity::new(id, EntityKind::Enemy, enemy_pos, ENEMY_SIZE).with_texture("enemy");
         game.entities.push(enemy);
+
+        if let Some(sound) = game.assets.sound("music") {
+            play_sound(
+                sound,
+                PlaySoundParams {
+                    looped: true,
+                    volume: 1.0,
+                },
+            );
+        }
 
         game
     }
