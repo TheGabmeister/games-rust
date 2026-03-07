@@ -7,4 +7,4 @@ mod state;
 #[path = "systems.rs"]
 mod systems;
 
-pub use state::{Game, SCREEN_HEIGHT, SCREEN_WIDTH};
+pub use state::{Game, GameState, SCREEN_HEIGHT, SCREEN_WIDTH};
