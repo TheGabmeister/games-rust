@@ -1,7 +1,7 @@
-use hecs::{Entity, World};
+use hecs::World;
 use macroquad::prelude::*;
 
-use crate::ecs::{Bouncer, Collider, PreviousTransform, Transform, Velocity};
+use crate::ecs::{Bouncer, Collider, Player, PreviousTransform, Transform, Velocity};
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct WorldBounds {
@@ -56,9 +56,10 @@ pub fn bounce(world: &mut World, bounds: WorldBounds) {
     }
 }
 
-pub fn clamp_player(world: &mut World, player: Entity, bounds: WorldBounds) {
-    let mut player_query = world.query_one::<(&mut Transform, &Collider)>(player);
-    if let Ok((transform, collider)) = player_query.get() {
+/// Clamps the player entity within `bounds`. Finds the player via the `Player`
+/// marker component — no entity handle needed.
+pub fn clamp_player(world: &mut World, bounds: WorldBounds) {
+    for (_, transform, collider) in world.query_mut::<(&Player, &mut Transform, &Collider)>() {
         transform.position.x = transform.position.x.clamp(
             bounds.min.x,
             (bounds.max.x - collider.size.x).max(bounds.min.x),

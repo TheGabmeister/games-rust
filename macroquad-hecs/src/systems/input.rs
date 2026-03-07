@@ -1,7 +1,7 @@
-use hecs::{Entity, World};
+use hecs::World;
 use macroquad::prelude::*;
 
-use crate::ecs::Velocity;
+use crate::ecs::{Player, Velocity};
 
 #[derive(Clone, Copy, Debug, Default)]
 pub struct InputState {
@@ -35,8 +35,10 @@ pub fn sample_input() -> InputState {
     }
 }
 
-pub fn apply_player_velocity(world: &mut World, player: Entity, input: InputState, speed: f32) {
-    if let Ok(mut velocity) = world.get::<&mut Velocity>(player) {
+/// Sets player velocity from input. Finds the player via the `Player` marker
+/// component — no entity handle needed.
+pub fn apply_player_velocity(world: &mut World, input: InputState, speed: f32) {
+    for (_, velocity) in world.query_mut::<(&Player, &mut Velocity)>() {
         velocity.value = input.movement * speed;
     }
 }

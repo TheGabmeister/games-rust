@@ -8,7 +8,7 @@ mod state_machine;
 mod states;
 mod systems;
 
-use assets::{AssetManager, DEFAULT_ASSET_MANIFEST};
+use assets::DEFAULT_ASSET_MANIFEST;
 use debug::{debug_enabled, draw_debug_overlay, toggle_debug};
 use game::GameData;
 use macroquad::prelude::*;
@@ -26,13 +26,8 @@ fn window_conf() -> Conf {
 
 #[macroquad::main(window_conf)]
 async fn main() {
-    let (assets, startup_warning) = match AssetManager::from_manifest(DEFAULT_ASSET_MANIFEST).await
-    {
-        Ok(assets) => (assets, None),
-        Err(error) => (AssetManager::default(), Some(error)),
-    };
-
-    let mut game_data = GameData::new(assets, startup_warning);
+    let assets = assets::AssetManager::from_manifest(DEFAULT_ASSET_MANIFEST).await;
+    let mut game_data = GameData::new(assets);
 
     let mut state_machine: StateMachine<GameData, AppState> = StateMachine::new();
     state_machine.add_state(AppState::Playing, PlayingState);

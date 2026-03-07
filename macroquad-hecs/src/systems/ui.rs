@@ -1,10 +1,12 @@
+use hecs::World;
 use macroquad::prelude::*;
 
-pub fn draw_hud(
-    collision_notes: &[String],
-    startup_warning: Option<&str>,
-    asset_warnings: &[String],
-) {
+use crate::assets::AssetManager;
+use crate::ecs::{CollisionState, Player};
+
+/// Draws the in-game HUD. Reads collision notes from the player's `CollisionState`
+/// component and asset warnings directly from `AssetManager`.
+pub fn draw_hud(world: &World, assets: &AssetManager) {
     draw_text(
         "Move: WASD/Arrows | Pause: P/Esc | Toggle Debug: F3 | Blip: Space",
         16.0,
@@ -13,18 +15,21 @@ pub fn draw_hud(
         WHITE,
     );
 
-    let mut text_y = 56.0;
-    for note in collision_notes {
-        draw_text(note, 16.0, text_y, 24.0, YELLOW);
-        text_y += 24.0;
+    let mut q = world.query::<(&Player, &CollisionState)>();
+    if let Some((_, state)) = q.iter().next() {
+        let mut text_y = 56.0;
+        for note in &state.notes {
+            draw_text(note, 16.0, text_y, 24.0, YELLOW);
+            text_y += 24.0;
+        }
     }
 
-    if let Some(warning) = startup_warning {
-        draw_text(warning, 16.0, screen_height() - 22.0, 20.0, RED);
+    if let Some(error) = assets.critical_error() {
+        draw_text(error, 16.0, screen_height() - 22.0, 20.0, RED);
     }
 
     let mut warning_y = screen_height() - 48.0;
-    for warning in asset_warnings.iter().take(2) {
+    for warning in assets.warnings().iter().take(2) {
         draw_text(warning, 16.0, warning_y, 20.0, ORANGE);
         warning_y -= 24.0;
     }

@@ -1,4 +1,4 @@
-use hecs::{Entity, World};
+use hecs::World;
 use macroquad::prelude::*;
 
 use crate::assets::{AssetManager, TextureId};
@@ -26,31 +26,23 @@ struct DrawItem {
 pub struct GameData {
     pub world: World,
     pub assets: AssetManager,
-    player: Entity,
     scheduler: FixedTimestepScheduler,
     world_bounds: WorldBounds,
     camera: CameraRig,
-    last_collision_notes: Vec<String>,
-    was_colliding: bool,
-    startup_warning: Option<String>,
 }
 
 impl GameData {
-    pub fn new(assets: AssetManager, startup_warning: Option<String>) -> Self {
+    pub fn new(assets: AssetManager) -> Self {
         let mut world = World::new();
-        let player = spawn_template_entities(&mut world);
+        spawn_template_entities(&mut world);
         let world_bounds = WorldBounds::from_size(vec2(WORLD_WIDTH, WORLD_HEIGHT));
 
         Self {
             world,
             assets,
-            player,
             scheduler: FixedTimestepScheduler::new(FIXED_DT, MAX_FRAME_DT, MAX_SIM_STEPS_PER_FRAME),
             world_bounds,
             camera: CameraRig::new(world_bounds.size()),
-            last_collision_notes: Vec::new(),
-            was_colliding: false,
-            startup_warning,
         }
     }
 
@@ -79,11 +71,7 @@ impl GameData {
 
     pub fn draw_ui(&self) {
         self.camera.begin_screen_pass();
-        ui::draw_hud(
-            &self.last_collision_notes,
-            self.startup_warning.as_deref(),
-            self.assets.warnings(),
-        );
+        ui::draw_hud(&self.world, &self.assets);
     }
 
     pub fn draw_paused_overlay(&self) {
@@ -93,18 +81,12 @@ impl GameData {
 
     fn run_fixed_step(&mut self, input: InputState) {
         movement::snapshot_previous_transforms(&mut self.world);
-        input::apply_player_velocity(&mut self.world, self.player, input, PLAYER_SPEED);
+        input::apply_player_velocity(&mut self.world, input, PLAYER_SPEED);
         movement::integrate(&mut self.world, self.scheduler.fixed_dt());
         movement::bounce(&mut self.world, self.world_bounds);
-        movement::clamp_player(&mut self.world, self.player, self.world_bounds);
-
-        let report =
-            collision::detect_player_collisions(&self.world, self.player, self.was_colliding);
-        self.last_collision_notes = report.notes;
-        if report.started_colliding {
-            audio::play_hit(&self.assets);
-        }
-        self.was_colliding = report.is_colliding;
+        movement::clamp_player(&mut self.world, self.world_bounds);
+        collision::detect_player_collisions(&mut self.world);
+        audio::play_hit_if_collision_started(&self.world, &self.assets);
     }
 
     fn collect_draw_items(&self, alpha: f32) -> Vec<DrawItem> {
