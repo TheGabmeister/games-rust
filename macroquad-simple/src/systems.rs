@@ -3,10 +3,7 @@ use crate::entities::Entity;
 
 // AABB collision check between two entities.
 pub fn aabb(a: &Entity, b: &Entity) -> bool {
-    a.position.x < b.position.x + b.size.x
-        && a.position.x + a.size.x > b.position.x
-        && a.position.y < b.position.y + b.size.y
-        && a.position.y + a.size.y > b.position.y
+    a.rect().overlaps(&b.rect())
 }
 
 // Returns all colliding (id_a, id_b) pairs from the entity list.
