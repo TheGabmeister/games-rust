@@ -140,16 +140,31 @@ async fn main() {
     batch_spawn_entities(&mut world, 5);
 
     let mut motion_query = PreparedQuery::<(Entity, &mut Position, &Speed)>::default();
+    let mut paused = false;
 
     loop {
+        if is_key_pressed(KeyCode::Space) {
+            paused = !paused;
+        }
+        if is_key_pressed(KeyCode::Escape) {
+            break;
+        }
+
         // Update
-        system_integrate_motion(&mut world, &mut motion_query);
-        system_fire_at_closest(&mut world);
-        system_remove_dead(&mut world);
+        if !paused {
+            system_integrate_motion(&mut world, &mut motion_query);
+            system_fire_at_closest(&mut world);
+            system_remove_dead(&mut world);
+        }
 
         // Draw
         clear_background(BLACK);
         system_draw(&world);
+        if paused {
+            draw_text("PAUSED  [Space] resume  [Esc] quit", 10.0, 20.0, 20.0, YELLOW);
+        } else {
+            draw_text("[Space] pause  [Esc] quit", 10.0, 20.0, 20.0, GRAY);
+        }
 
         next_frame().await;
     }
