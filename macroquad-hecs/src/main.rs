@@ -1,8 +1,6 @@
 use macroquad::prelude::*;
 use hecs::*;
 use ::rand::RngExt;
-use std::io;
-
 
 #[derive(Debug)]
 struct Position {
@@ -137,7 +135,8 @@ fn print_world_state(world: &mut World) {
     }
 }
 
-fn main() {
+#[macroquad::main("Game")]
+async fn main() {
     let mut world = World::new();
 
     batch_spawn_entities(&mut world, 5);
@@ -145,24 +144,14 @@ fn main() {
     let mut motion_query = PreparedQuery::<(Entity, &mut Position, &Speed)>::default();
 
     loop {
-        println!("\n'Enter' to continue simulation, '?' for entity list, 'q' to quit");
+        // Update
+        system_integrate_motion(&mut world, &mut motion_query);
+        system_fire_at_closest(&mut world);
+        system_remove_dead(&mut world);
 
-        let mut input = String::new();
+        // Draw
+        clear_background(BLACK);
 
-        io::stdin().read_line(&mut input).unwrap();
-
-        match input.trim() {
-            "" => {
-                // Run all simulation systems:
-                system_integrate_motion(&mut world, &mut motion_query);
-                system_fire_at_closest(&mut world);
-                system_remove_dead(&mut world);
-            }
-            "q" => break,
-            "?" => {
-                print_world_state(&mut world);
-            }
-            _ => {}
-        }
+        next_frame().await;
     }
 }
