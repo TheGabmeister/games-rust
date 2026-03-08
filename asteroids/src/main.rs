@@ -70,27 +70,17 @@ impl Player {
 
 struct GameState {
     should_quit: bool,
-    player: Player,
 }
 
 impl GameState {
-    fn new(player: Player) -> Self {
-        Self {
-            should_quit: false,
-            player,
-        }
+    fn new() -> Self {
+        Self { should_quit: false }
     }
 
-    fn update(&mut self, dt: f32) {
+    fn update(&mut self) {
         if is_key_pressed(KeyCode::Q) {
             self.should_quit = true;
         }
-        self.player.update(dt);
-    }
-
-    fn draw(&self) {
-        clear_background(BLACK);
-        self.player.draw();
     }
 }
 
@@ -102,17 +92,20 @@ async fn main() {
     let player_path = assets.texture_path("player").expect("No 'player' texture in assets.json");
     let player_texture = load_texture(player_path).await.expect("Failed to load player texture");
 
-    let mut state = GameState::new(Player::new(player_texture));
+    let mut state = GameState::new();
+    let mut player = Player::new(player_texture);
 
     loop {
         let dt = get_frame_time();
-        state.update(dt);
+        state.update();
+        player.update(dt);
 
         if state.should_quit {
             std::process::exit(0);
         }
 
-        state.draw();
+        clear_background(BLACK);
+        player.draw();
 
         next_frame().await
     }
