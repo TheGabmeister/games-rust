@@ -6,6 +6,9 @@ use crate::collision::overlaps;
 use crate::components::*;
 use crate::resources::{Resources, SoundId};
 
+const HULK_HIT_SLOW_SECONDS: f32 = 0.35;
+const HULK_KNOCKBACK_SPEED: f32 = 180.0;
+
 #[derive(Clone, Copy)]
 struct ProjectileSnapshot {
     entity: Entity,
@@ -39,12 +42,14 @@ pub fn system_projectile_collision(world: &mut World, cmd: &mut CommandBuffer, r
     let mut hit_count: u32 = 0;
     let mut kill_count: u32 = 0;
 
-    for (enemy_e, enemy_pos, enemy_col, health, invulnerable, _) in &mut world
+    for (enemy_e, enemy_pos, enemy_col, enemy_vel, health, hit_slow, invulnerable, enemy_kind) in &mut world
         .query::<(
             Entity,
             &Position,
             &Collider,
+            &mut Velocity,
             &mut Health,
+            &mut HitSlow,
             Option<&Invulnerable>,
             &EnemyKind,
         )>()
@@ -65,6 +70,11 @@ pub fn system_projectile_collision(world: &mut World, cmd: &mut CommandBuffer, r
 
                 let is_invulnerable = invulnerable.is_some_and(|v| v.0);
                 if is_invulnerable {
+                    if *enemy_kind == EnemyKind::Hulk {
+                        hit_slow.0 = HULK_HIT_SLOW_SECONDS.max(hit_slow.0);
+                        let away = (enemy_pos.0 - proj.pos).normalize_or_zero();
+                        enemy_vel.0 += away * HULK_KNOCKBACK_SPEED;
+                    }
                     break; // projectile consumed on contact, no damage applied
                 }
 

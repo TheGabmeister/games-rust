@@ -15,6 +15,12 @@ pub fn batch_spawn_enemies(world: &mut World, n: usize) {
         let kind = SPAWN_KINDS[rng.random_range(0..SPAWN_KINDS.len())];
         spawn_enemy(world, kind, pos);
     }
+
+    // Step 5 test setup: always start with two Hulks.
+    let hulk_spawns = [vec2(120.0, 120.0), vec2(680.0, 120.0)];
+    for pos in hulk_spawns {
+        spawn_enemy(world, EnemyKind::Hulk, pos);
+    }
 }
 
 pub fn spawn_enemy(world: &mut World, kind: EnemyKind, pos: Vec2) {
@@ -26,6 +32,7 @@ pub fn spawn_enemy(world: &mut World, kind: EnemyKind, pos: Vec2) {
         Velocity(Vec2::ZERO),
         Speed(profile.speed),
         Health(profile.health),
+        HitSlow(0.0),
         kind,
         Invulnerable(matches!(kind, EnemyKind::Hulk)),
         FireCooldown {

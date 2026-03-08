@@ -50,7 +50,7 @@ async fn main() {
 
                 if input.confirm_pressed {
                     world.clear();
-                    batch_spawn_enemies(&mut world, 10);
+                    batch_spawn_enemies(&mut world, 2);
                     spawn_player(&mut world);
                     res.score = 0;
                     res.player_died = false;
@@ -84,13 +84,23 @@ async fn main() {
                     res.queue_sound(SoundId::Lose);
                     system_audio(&mut res);
                 }
-                // Wave complete when all enemies are gone.
-                else if world.query::<&EnemyKind>().iter().count() == 0 {
-                    res.player_died = false;
-                    res.state = GameState::GameOver;
-                    stop_music(&res);
-                    res.queue_sound(SoundId::Lose);
-                    system_audio(&mut res);
+                // Classic Robotron behavior: surviving Hulks do not block wave clear.
+                else {
+                    let mut has_non_hulk = false;
+                    for kind in world.query::<&EnemyKind>().iter() {
+                        if *kind != EnemyKind::Hulk {
+                            has_non_hulk = true;
+                            break;
+                        }
+                    }
+
+                    if !has_non_hulk {
+                        res.player_died = false;
+                        res.state = GameState::GameOver;
+                        stop_music(&res);
+                        res.queue_sound(SoundId::Lose);
+                        system_audio(&mut res);
+                    }
                 }
 
                 if input.cancel_pressed {

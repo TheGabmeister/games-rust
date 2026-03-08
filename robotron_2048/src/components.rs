@@ -8,6 +8,7 @@ pub struct Velocity(pub Vec2);
 // --- Stats ---
 pub struct Speed(pub f32);
 pub struct Health(pub i32);
+pub struct HitSlow(pub f32); // seconds remaining for temporary movement slowdown
 pub struct Lifetime(pub f32); // seconds until auto-despawn
 pub struct FireCooldown {
     pub remaining: f32,
