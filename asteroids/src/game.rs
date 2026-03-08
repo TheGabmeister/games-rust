@@ -21,8 +21,10 @@ pub struct Game {
     enemy_laser_texture: Texture2D,
     sfx_laser:     Sound,
     sfx_bump:      Sound,
+    sfx_lose:      Sound,
     pub should_quit: bool,
     score:         u32,
+    respawn_timer: Option<f32>,
 }
 
 impl Game {
@@ -43,8 +45,10 @@ impl Game {
             enemy_laser_texture: assets.enemy_laser.clone(),
             sfx_laser:     assets.sfx_laser.clone(),
             sfx_bump:      assets.sfx_bump.clone(),
+            sfx_lose:      assets.sfx_lose.clone(),
             should_quit:   false,
             score:         0,
+            respawn_timer: None,
         }
     }
 
@@ -84,20 +88,7 @@ impl Game {
             }
         }
 
-        if self.player.alive {
-            for laser in &mut self.enemy_lasers {
-                if laser.alive && overlaps(laser, &self.player) {
-                    laser.alive = false;
-                    self.player.alive = false;
-                }
-            }
-
-            if self.pickup.alive && overlaps(&self.player, &self.pickup) {
-                self.pickup.alive = false;
-                self.player.lives += 1;
-            }
-        }
-
+        // Asteroid vs player laser
         for asteroid in &mut self.asteroids {
             for laser in &mut self.player_lasers {
                 if laser.alive && asteroid.alive && overlaps(laser, asteroid) {
@@ -109,6 +100,52 @@ impl Game {
             }
         }
         self.asteroids.retain(|a| a.alive);
+
+        // Player death collisions
+        let mut player_killed = false;
+        if self.player.alive {
+            for laser in &mut self.enemy_lasers {
+                if laser.alive && overlaps(laser, &self.player) {
+                    laser.alive = false;
+                    player_killed = true;
+                }
+            }
+
+            for asteroid in &self.asteroids {
+                if overlaps(&self.player, asteroid) {
+                    player_killed = true;
+                    break;
+                }
+            }
+
+            if self.enemy.alive && overlaps(&self.player, &self.enemy) {
+                self.enemy.alive = false;
+                player_killed = true;
+            }
+
+            if self.pickup.alive && overlaps(&self.player, &self.pickup) {
+                self.pickup.alive = false;
+                self.player.lives += 1;
+            }
+        }
+
+        if player_killed {
+            self.player.alive = false;
+            self.player.lives = self.player.lives.saturating_sub(1);
+            play_sound(&self.sfx_lose, PlaySoundParams { looped: false, volume: 1.0 });
+            if self.player.lives > 0 {
+                self.respawn_timer = Some(3.0);
+            }
+        }
+
+        if let Some(ref mut timer) = self.respawn_timer {
+            *timer -= dt;
+            if *timer <= 0.0 {
+                self.player.respawn();
+                self.respawn_timer = None;
+            }
+        }
+
         for asteroid in &mut self.asteroids { asteroid.update(dt); }
         for laser in &mut self.player_lasers { laser.update(dt); }
         for laser in &mut self.enemy_lasers  { laser.update(dt); }
@@ -127,5 +164,18 @@ impl Game {
 
         draw_text(&format!("Lives: {}", self.player.lives), 10.0, 24.0, 24.0, WHITE);
         draw_text(&format!("Score: {}", self.score), 10.0, 50.0, 24.0, WHITE);
+
+        if !self.player.alive && self.player.lives == 0 {
+            let text = "GAME OVER";
+            let size = 64.0;
+            let dims = measure_text(text, None, size as u16, 1.0);
+            draw_text(
+                text,
+                screen_width()  / 2.0 - dims.width / 2.0,
+                screen_height() / 2.0 + dims.height / 2.0,
+                size,
+                WHITE,
+            );
+        }
     }
 }

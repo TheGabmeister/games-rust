@@ -66,6 +66,15 @@ impl Player {
         if self.y + hh < 0.0 { self.y = sh + hh; }
     }
 
+    pub fn respawn(&mut self) {
+        self.x     = screen_width()  / 2.0;
+        self.y     = screen_height() / 2.0;
+        self.angle = 0.0;
+        self.vx    = 0.0;
+        self.vy    = 0.0;
+        self.alive = true;
+    }
+
     pub fn draw(&self) {
         let hw = self.texture.width()  / 2.0;
         let hh = self.texture.height() / 2.0;
