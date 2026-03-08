@@ -5,6 +5,7 @@ use macroquad::audio::{play_sound, PlaySoundParams};
 use macroquad::prelude::*;
 
 mod assets;
+mod collidable;
 mod enemy;
 mod game;
 mod laser;

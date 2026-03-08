@@ -2,6 +2,7 @@ use macroquad::audio::{play_sound, PlaySoundParams, Sound};
 use macroquad::prelude::*;
 
 use crate::assets::Assets;
+use crate::collidable::overlaps;
 use crate::enemy::Enemy;
 use crate::laser::Laser;
 use crate::pickup::Pickup;
@@ -57,7 +58,7 @@ impl Game {
             }
 
             for laser in &mut self.player_lasers {
-                if laser.alive && laser.collider().overlaps(&self.enemy.collider()) {
+                if laser.alive && overlaps(laser, &self.enemy) {
                     laser.alive = false;
                     self.enemy.alive = false;
                 }
@@ -66,13 +67,13 @@ impl Game {
 
         if self.player.alive {
             for laser in &mut self.enemy_lasers {
-                if laser.alive && laser.collider().overlaps(&self.player.collider()) {
+                if laser.alive && overlaps(laser, &self.player) {
                     laser.alive = false;
                     self.player.alive = false;
                 }
             }
 
-            if self.pickup.alive && self.player.collider().overlaps(&self.pickup.collider()) {
+            if self.pickup.alive && overlaps(&self.player, &self.pickup) {
                 self.pickup.alive = false;
                 self.player.lives += 1;
             }

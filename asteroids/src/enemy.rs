@@ -1,5 +1,7 @@
 use macroquad::prelude::*;
 
+use crate::collidable::Collidable;
+
 pub struct Enemy {
     pub x:     f32,
     pub y:     f32,
@@ -29,15 +31,17 @@ impl Enemy {
         false
     }
 
-    pub fn collider(&self) -> Rect {
-        let hw = self.texture.width() / 2.0;
-        let hh = self.texture.height() / 2.0;
-        Rect::new(self.x - hw, self.y - hh, self.texture.width(), self.texture.height())
-    }
-
     pub fn draw(&self) {
         let hw = self.texture.width() / 2.0;
         let hh = self.texture.height() / 2.0;
         draw_texture(&self.texture, self.x - hw, self.y - hh, WHITE);
+    }
+}
+
+impl Collidable for Enemy {
+    fn collider(&self) -> Rect {
+        let hw = self.texture.width() / 2.0;
+        let hh = self.texture.height() / 2.0;
+        Rect::new(self.x - hw, self.y - hh, self.texture.width(), self.texture.height())
     }
 }
