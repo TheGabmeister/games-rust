@@ -1,8 +1,9 @@
 [package]
-name = "macroquad-template"
+name = "macroquad-hecs"
 version = "0.1.0"
 edition = "2024"
 
 [dependencies]
 macroquad = "0.4.14"
 hecs = "0.11.0"
+rand = "0.10.0"
