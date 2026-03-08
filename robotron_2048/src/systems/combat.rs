@@ -1,45 +1,86 @@
-use macroquad::prelude::Vec2;
 use hecs::*;
+use macroquad::prelude::Vec2;
+use std::collections::HashSet;
 
 use crate::collision::overlaps;
 use crate::components::*;
 use crate::resources::{Resources, SoundId};
 
-/// Collision: projectiles one-shot the first enemy they touch.
-/// Both the projectile and enemy are queued for despawn via CommandBuffer.
-pub fn system_projectile_collision(world: &World, cmd: &mut CommandBuffer, res: &mut Resources) {
-    // Snapshot positions + colliders first.
-    let projs: Vec<(Entity, Vec2, Collider, Projectile)> = world
+#[derive(Clone, Copy)]
+struct ProjectileSnapshot {
+    entity: Entity,
+    pos: Vec2,
+    collider: Collider,
+    projectile: Projectile,
+}
+
+/// Resolve projectile-vs-enemy collisions.
+/// Uses snapshot + deferred commands so we can safely mutate health and queue despawns.
+pub fn system_projectile_collision(world: &mut World, cmd: &mut CommandBuffer, res: &mut Resources) {
+    // Snapshot projectiles once so we can then iterate enemies mutably.
+    let projectiles: Vec<ProjectileSnapshot> = world
         .query::<(Entity, &Position, &Collider, &Projectile)>()
         .iter()
-        .map(|(e, pos, col, projectile)| (e, pos.0, *col, *projectile))
+        .map(|(entity, pos, collider, projectile)| ProjectileSnapshot {
+            entity,
+            pos: pos.0,
+            collider: *collider,
+            projectile: *projectile,
+        })
+        .filter(|p| p.projectile.faction == Faction::Player)
         .collect();
 
-    let enemies: Vec<(Entity, Vec2, Collider)> = world
-        .query::<With<(Entity, &Position, &Collider), &EnemyKind>>()
-        .iter()
-        .map(|(e, pos, col)| (e, pos.0, *col))
-        .collect();
+    if projectiles.is_empty() {
+        return;
+    }
 
-    // Queue one (projectile, enemy) hit per projectile.
+    let mut consumed_projectiles: HashSet<Entity> = HashSet::new();
+    let mut killed_enemies: HashSet<Entity> = HashSet::new();
     let mut hit_count: u32 = 0;
-    for &(proj_e, proj_pos, proj_col, projectile) in &projs {
-        if projectile.faction != Faction::Player {
+    let mut kill_count: u32 = 0;
+
+    for (enemy_e, enemy_pos, enemy_col, health, invulnerable, _) in &mut world
+        .query::<(
+            Entity,
+            &Position,
+            &Collider,
+            &mut Health,
+            Option<&Invulnerable>,
+            &EnemyKind,
+        )>()
+    {
+        if killed_enemies.contains(&enemy_e) {
             continue;
         }
 
-        for &(enemy_e, enemy_pos, enemy_col) in &enemies {
-            if overlaps(proj_col, proj_pos, enemy_col, enemy_pos) {
-                cmd.despawn(proj_e);
-                cmd.despawn(enemy_e);
+        for proj in &projectiles {
+            if consumed_projectiles.contains(&proj.entity) {
+                continue;
+            }
+
+            if overlaps(proj.collider, proj.pos, *enemy_col, enemy_pos.0) {
+                consumed_projectiles.insert(proj.entity);
+                cmd.despawn(proj.entity);
                 hit_count += 1;
-                break; // one hit per projectile
+
+                let is_invulnerable = invulnerable.is_some_and(|v| v.0);
+                if is_invulnerable {
+                    break; // projectile consumed on contact, no damage applied
+                }
+
+                let dmg = proj.projectile.damage.max(0);
+                health.0 -= dmg;
+                if health.0 <= 0 && killed_enemies.insert(enemy_e) {
+                    cmd.despawn(enemy_e);
+                    kill_count += 1;
+                    break; // dead enemy should not absorb more projectiles this frame
+                }
             }
         }
     }
 
-    // Credit score and queue one sound per hit.
-    res.score += hit_count;
+    // Credit score per kill; queue impact sound per registered hit.
+    res.score += kill_count;
     for _ in 0..hit_count {
         res.queue_sound(SoundId::Bump);
     }

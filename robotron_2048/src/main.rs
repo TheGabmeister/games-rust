@@ -66,7 +66,7 @@ async fn main() {
                 system_player_move(&mut world, input);
                 system_player_shoot(&mut world, input, &mut res);
                 system_integrate_velocity(&mut world, &mut integrate_query);
-                system_projectile_collision(&world, &mut commands, &mut res);
+                system_projectile_collision(&mut world, &mut commands, &mut res);
                 system_tick_lifetime(&mut world, &mut lifetime_query);
                 system_remove_expired(&world, &mut commands);
 
