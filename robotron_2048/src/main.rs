@@ -62,7 +62,7 @@ async fn main() {
         match res.state {
             GameState::MainMenu => {
                 sim.reset_timestep();
-                update_main_menu(&mut world, &mut res, input);
+                update_main_menu(&mut world, &mut res, &mut sim, input);
             }
             GameState::Playing => {
                 sim.accumulator += frame_dt;
@@ -102,7 +102,7 @@ async fn main() {
     }
 }
 
-fn update_main_menu(world: &mut World, res: &mut Resources, input: InputState) {
+fn update_main_menu(world: &mut World, res: &mut Resources, sim: &mut SimulationCaches, input: InputState) {
     if !input.confirm_pressed {
         return;
     }
@@ -112,7 +112,7 @@ fn update_main_menu(world: &mut World, res: &mut Resources, input: InputState) {
     res.score = 0;
     res.player_died = false;
     res.wave_director.reset();
-    system_wave_director(world, &mut res.wave_director);
+    system_wave_director(world, &mut res.wave_director, &mut sim.rng);
     res.state = GameState::Playing;
     start_music(res);
 }
@@ -129,7 +129,7 @@ fn update_playing_step(
         return;
     }
 
-    system_wave_director(world, &mut res.wave_director);
+    system_wave_director(world, &mut res.wave_director, &mut sim.rng);
     system_enemy_ai(world, &mut sim.rng, dt);
     system_enemy_attack(world, &mut sim.rng, dt);
     system_enemy_spawn(world, &mut sim.rng, dt);
@@ -156,7 +156,7 @@ fn update_playing_step(
     let wave_cleared = world.query::<&WaveClearTarget>().iter().next().is_none();
     if wave_cleared {
         res.wave_director.queue_next_wave();
-        system_wave_director(world, &mut res.wave_director);
+        system_wave_director(world, &mut res.wave_director, &mut sim.rng);
     }
 }
 

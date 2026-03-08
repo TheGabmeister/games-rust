@@ -12,16 +12,19 @@ const MIN_SPAWN_DISTANCE_FROM_PLAYER: f32 = 140.0;
 const SPAWN_MARGIN: f32 = 24.0;
 const ENFORCER_EMBRYO_RADIUS: f32 = 9.0;
 
-pub fn system_wave_director(world: &mut World, wave_director: &mut WaveDirector) {
+pub fn system_wave_director(
+    world: &mut World,
+    wave_director: &mut WaveDirector,
+    rng: &mut ::rand::rngs::ThreadRng,
+) {
     let Some(request) = wave_director.consume_spawn_request() else {
         return;
     };
 
-    spawn_wave(world, request);
+    spawn_wave(world, request, rng);
 }
 
-fn spawn_wave(world: &mut World, request: WaveSpawnRequest) {
-    let mut rng = ::rand::rng();
+fn spawn_wave(world: &mut World, request: WaveSpawnRequest, rng: &mut ::rand::rngs::ThreadRng) {
     let player_pos = world
         .query::<With<&Position, &Player>>()
         .iter()
@@ -31,14 +34,14 @@ fn spawn_wave(world: &mut World, request: WaveSpawnRequest) {
     for entry in request.definition.entries {
         let count = scaled_wave_count(entry.count, request.difficulty_cycle);
         for _ in 0..count {
-            let mut spawn_pos = random_arena_position(&mut rng);
+            let mut spawn_pos = random_arena_position(rng);
             for _ in 0..8 {
                 if player_pos.is_none_or(|player| {
                     player.distance(spawn_pos) >= MIN_SPAWN_DISTANCE_FROM_PLAYER
                 }) {
                     break;
                 }
-                spawn_pos = random_arena_position(&mut rng);
+                spawn_pos = random_arena_position(rng);
             }
             spawn_enemy(world, entry.kind, spawn_pos);
         }
