@@ -14,57 +14,74 @@ struct ProjectileSnapshot {
     projectile: Projectile,
 }
 
+/// Per-step scratch buffers for collision resolution — allocated once and reused.
+pub struct CombatScratch {
+    player_projectiles: Vec<ProjectileSnapshot>,
+    spark_projectiles: Vec<ProjectileSnapshot>,
+    consumed: HashSet<Entity>,
+    killed: HashSet<Entity>,
+}
+
+impl CombatScratch {
+    pub fn new() -> Self {
+        Self {
+            player_projectiles: Vec::new(),
+            spark_projectiles: Vec::new(),
+            consumed: HashSet::new(),
+            killed: HashSet::new(),
+        }
+    }
+}
+
 /// Resolve projectile-vs-enemy collisions.
 /// Uses snapshot + deferred commands so we can safely mutate health and queue despawns.
 pub fn system_projectile_collision(
     world: &mut World,
     cmd: &mut CommandBuffer,
+    scratch: &mut CombatScratch,
     res: &mut Resources,
 ) {
-    // Snapshot projectiles once so we can then iterate enemies mutably.
-    let all_projectiles: Vec<ProjectileSnapshot> = world
+    // Classify projectiles in a single pass directly into the scratch vecs.
+    scratch.player_projectiles.clear();
+    scratch.spark_projectiles.clear();
+    scratch.consumed.clear();
+    scratch.killed.clear();
+
+    for (entity, pos, collider, projectile) in world
         .query::<(Entity, &Position, &Collider, &Projectile)>()
         .iter()
-        .map(|(entity, pos, collider, projectile)| ProjectileSnapshot {
+    {
+        let snap = ProjectileSnapshot {
             entity,
             pos: pos.0,
             collider: *collider,
             projectile: *projectile,
-        })
-        .collect();
+        };
+        match projectile.faction {
+            Faction::Player => scratch.player_projectiles.push(snap),
+            Faction::Enemy if projectile.kind == ProjectileKind::EnforcerSpark => {
+                scratch.spark_projectiles.push(snap)
+            }
+            _ => {}
+        }
+    }
 
-    let player_projectiles: Vec<ProjectileSnapshot> = all_projectiles
-        .iter()
-        .copied()
-        .filter(|p| p.projectile.faction == Faction::Player)
-        .collect();
-    let spark_projectiles: Vec<ProjectileSnapshot> = all_projectiles
-        .iter()
-        .copied()
-        .filter(|p| {
-            p.projectile.faction == Faction::Enemy
-                && p.projectile.kind == ProjectileKind::EnforcerSpark
-        })
-        .collect();
-
-    if player_projectiles.is_empty() {
+    if scratch.player_projectiles.is_empty() {
         return;
     }
 
-    let mut consumed_projectiles: HashSet<Entity> = HashSet::new();
-    let mut killed_enemies: HashSet<Entity> = HashSet::new();
     let mut hit_count: u32 = 0;
     let mut kill_score: u32 = 0;
     let mut spark_score: u32 = 0;
 
     // Sparks are destructible by player projectiles.
-    for player_proj in &player_projectiles {
-        if consumed_projectiles.contains(&player_proj.entity) {
+    for player_proj in &scratch.player_projectiles {
+        if scratch.consumed.contains(&player_proj.entity) {
             continue;
         }
 
-        for spark_proj in &spark_projectiles {
-            if consumed_projectiles.contains(&spark_proj.entity) {
+        for spark_proj in &scratch.spark_projectiles {
+            if scratch.consumed.contains(&spark_proj.entity) {
                 continue;
             }
 
@@ -74,8 +91,8 @@ pub fn system_projectile_collision(
                 spark_proj.collider,
                 spark_proj.pos,
             ) {
-                consumed_projectiles.insert(player_proj.entity);
-                consumed_projectiles.insert(spark_proj.entity);
+                scratch.consumed.insert(player_proj.entity);
+                scratch.consumed.insert(spark_proj.entity);
                 cmd.despawn(player_proj.entity);
                 cmd.despawn(spark_proj.entity);
                 spark_score += projectile_score(spark_proj.projectile.kind);
@@ -106,17 +123,17 @@ pub fn system_projectile_collision(
         Option<&Invulnerable>,
         &EnemyKind,
     )>() {
-        if killed_enemies.contains(&enemy_e) {
+        if scratch.killed.contains(&enemy_e) {
             continue;
         }
 
-        for proj in &player_projectiles {
-            if consumed_projectiles.contains(&proj.entity) {
+        for proj in &scratch.player_projectiles {
+            if scratch.consumed.contains(&proj.entity) {
                 continue;
             }
 
             if overlaps(proj.collider, proj.pos, *enemy_col, enemy_pos.0) {
-                consumed_projectiles.insert(proj.entity);
+                scratch.consumed.insert(proj.entity);
                 cmd.despawn(proj.entity);
                 hit_count += 1;
 
@@ -134,7 +151,7 @@ pub fn system_projectile_collision(
 
                 let dmg = proj.projectile.damage.max(0);
                 health.0 -= dmg;
-                if health.0 <= 0 && killed_enemies.insert(enemy_e) {
+                if health.0 <= 0 && scratch.killed.insert(enemy_e) {
                     cmd.despawn(enemy_e);
                     kill_score += enemy_score(*enemy_kind);
                     break; // dead enemy should not absorb more projectiles this frame

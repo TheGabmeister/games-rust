@@ -21,6 +21,8 @@ struct SimulationCaches {
     lifetime_query: PreparedQuery<&'static mut Lifetime>,
     commands: CommandBuffer,
     accumulator: f32,
+    combat: CombatScratch,
+    render: RenderScratch,
 }
 
 impl SimulationCaches {
@@ -30,6 +32,8 @@ impl SimulationCaches {
             lifetime_query: PreparedQuery::default(),
             commands: CommandBuffer::new(),
             accumulator: 0.0,
+            combat: CombatScratch::new(),
+            render: RenderScratch::new(),
         }
     }
 
@@ -87,8 +91,8 @@ async fn main() {
         clear_background(BLACK);
         match res.state {
             GameState::MainMenu => draw_main_menu(),
-            GameState::Playing => draw_playing(&world, &res),
-            GameState::Paused => draw_paused(&world, &res),
+            GameState::Playing => draw_playing(&world, &res, &mut sim.render),
+            GameState::Paused => draw_paused(&world, &res, &mut sim.render),
             GameState::GameOver => draw_game_over(&res),
         }
 
@@ -132,7 +136,7 @@ fn update_playing_step(
     system_player_shoot(world, input, res);
     system_integrate_velocity(world, &mut sim.integrate_query, dt);
     system_clamp_to_arena(world);
-    system_projectile_collision(world, &mut sim.commands, res);
+    system_projectile_collision(world, &mut sim.commands, &mut sim.combat, res);
     system_tick_lifetime(world, &mut sim.lifetime_query, dt);
     system_remove_expired(world, &mut sim.commands);
 
@@ -184,8 +188,8 @@ fn draw_main_menu() {
     );
 }
 
-fn draw_playing(world: &World, res: &Resources) {
-    system_draw(world, res);
+fn draw_playing(world: &World, res: &Resources, render: &mut RenderScratch) {
+    system_draw(world, res, render);
     if res.debug_enabled {
         system_draw_colliders(world);
         draw_text("DEBUG COLLIDERS [F1]", 10.0, 60.0, 16.0, LIME);
@@ -207,8 +211,8 @@ fn draw_playing(world: &World, res: &Resources) {
     );
 }
 
-fn draw_paused(world: &World, res: &Resources) {
-    system_draw(world, res);
+fn draw_paused(world: &World, res: &Resources, render: &mut RenderScratch) {
+    system_draw(world, res, render);
     draw_rectangle(
         0.0,
         0.0,
