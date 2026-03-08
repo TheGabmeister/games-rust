@@ -80,7 +80,7 @@ fn system_fire_at_closest(world: &mut World) {
         let closest = match closest {
             Some(entity) => entity,
             None => {
-                println!("{id0:?} is the last survivor!");
+    
                 return;
             }
         };
@@ -99,14 +99,8 @@ fn system_fire_at_closest(world: &mut World) {
         if hp1.0 > 0 {
             // apply damage
             hp1.0 -= dmg0.0;
-            println!(
-                "Unit {closest:?} was damaged by {id0:?} for {:?} HP",
-                dmg0.0
-            );
             if hp1.0 <= 0 {
-                // if this killed it, increase own killcount
                 kc0.0 += 1;
-                println!("Unit {closest:?} was killed by unit {id0:?}!");
             }
         }
     }
@@ -126,12 +120,16 @@ fn system_remove_dead(world: &mut World) {
     }
 }
 
-fn print_world_state(world: &mut World) {
-    println!("\nEntity stats:");
-    for (id, hp, pos, dmg, kc) in
-        &mut world.query::<(Entity, &Health, &Position, &Damage, &KillCount)>()
-    {
-        println!("ID: {id:?}, {hp:?}, {dmg:?}, {pos:?}, {kc:?}");
+fn system_draw(world: &World) {
+    for (pos, hp, kc) in world.query::<(&Position, &Health, &KillCount)>().iter() {
+        draw_circle(pos.x, pos.y, 10.0, GREEN);
+        draw_text(
+            &format!("HP:{} K:{}", hp.0, kc.0),
+            pos.x - 10.0,
+            pos.y - 15.0,
+            16.0,
+            WHITE,
+        );
     }
 }
 
@@ -151,6 +149,7 @@ async fn main() {
 
         // Draw
         clear_background(BLACK);
+        system_draw(&world);
 
         next_frame().await;
     }
