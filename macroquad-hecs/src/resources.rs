@@ -1,4 +1,4 @@
-use macroquad::audio::{load_sound, play_sound, stop_sound, PlaySoundParams, Sound};
+use macroquad::audio::{load_sound, Sound};
 use macroquad::prelude::*;
 
 use crate::components::TextureId;
@@ -89,11 +89,5 @@ impl Resources {
         self.audio_queue.push(id);
     }
 
-    pub fn start_music(&self) {
-        play_sound(&self.music_spaceshooter, PlaySoundParams { looped: true, volume: 0.4 });
-    }
 
-    pub fn stop_music(&self) {
-        stop_sound(&self.music_spaceshooter);
-    }
 }

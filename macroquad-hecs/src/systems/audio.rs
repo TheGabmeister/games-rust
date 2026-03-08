@@ -1,6 +1,14 @@
-use macroquad::audio::{play_sound, PlaySoundParams};
+use macroquad::audio::{play_sound, stop_sound, PlaySoundParams};
 
 use crate::resources::{Resources, SoundId};
+
+pub fn start_music(res: &Resources) {
+    play_sound(&res.music_spaceshooter, PlaySoundParams { looped: true, volume: 0.4 });
+}
+
+pub fn stop_music(res: &Resources) {
+    stop_sound(&res.music_spaceshooter);
+}
 
 /// Drain the audio queue and play each pending sound.
 /// Collecting first avoids a simultaneous mutable borrow of audio_queue

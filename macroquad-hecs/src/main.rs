@@ -41,7 +41,7 @@ async fn main() {
                     spawn_player(&mut world);
                     res.score = 0;
                     res.state = GameState::Playing;
-                    res.start_music();
+                    start_music(&res);
                 }
             }
 
@@ -60,7 +60,7 @@ async fn main() {
                 // Wave complete when all enemies are gone.
                 if world.query::<&Enemy>().iter().count() == 0 {
                     res.state = GameState::GameOver;
-                    res.stop_music();
+                    stop_music(&res);
                     res.queue_sound(SoundId::Lose);
                     system_audio(&mut res);
                 }
@@ -91,7 +91,7 @@ async fn main() {
 
                 if is_key_pressed(KeyCode::Space)  { res.state = GameState::Playing; }
                 if is_key_pressed(KeyCode::Escape) {
-                    res.stop_music();
+                    stop_music(&res);
                     res.state = GameState::MainMenu;
                 }
             }
