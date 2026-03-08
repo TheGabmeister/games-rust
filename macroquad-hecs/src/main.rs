@@ -4,15 +4,15 @@ use ::rand::RngExt;
 
 #[derive(Debug)]
 struct Position {
-    x: i32,
-    y: i32,
+    x: f32,
+    y: f32,
 }
 
 #[derive(Debug)]
 struct Health(i32);
 
 #[derive(Debug)]
-struct Speed(i32);
+struct Speed(f32);
 
 #[derive(Debug)]
 struct Damage(i32);
@@ -20,10 +20,10 @@ struct Damage(i32);
 #[derive(Debug)]
 struct KillCount(i32);
 
-fn manhattan_dist(x0: i32, x1: i32, y0: i32, y1: i32) -> i32 {
+fn manhattan_dist(x0: f32, x1: f32, y0: f32, y1: f32) -> i32 {
     let dx = (x0 - x1).abs();
     let dy = (y0 - y1).abs();
-    dx + dy
+    (dx + dy) as i32
 }
 
 fn batch_spawn_entities(world: &mut World, n: usize) {
@@ -31,10 +31,10 @@ fn batch_spawn_entities(world: &mut World, n: usize) {
 
     let to_spawn = (0..n).map(|_| {
         let pos = Position {
-            x: rng.random_range(-10..10),
-            y: rng.random_range(-10..10),
+            x: rng.random_range(0.0..800.0),
+            y: rng.random_range(0.0..600.0),
         };
-        let s = Speed(rng.random_range(1..5));
+        let s = Speed(rng.random_range(50.0..200.0));
         let hp = Health(rng.random_range(30..50));
         let dmg = Damage(rng.random_range(1..10));
         let kc = KillCount(0);
@@ -53,11 +53,11 @@ fn system_integrate_motion(
 ) {
     let mut rng = ::rand::rng();
 
-    for (id, pos, s) in query.query_mut(world) {
+    let dt = get_frame_time();
+    for (_id, pos, s) in query.query_mut(world) {
         let change = (rng.random_range(-s.0..s.0), rng.random_range(-s.0..s.0));
-        pos.x += change.0;
-        pos.y += change.1;
-        println!("Unit {id:?} moved to {pos:?}");
+        pos.x += change.0 * dt;
+        pos.y += change.1 * dt;
     }
 }
 
