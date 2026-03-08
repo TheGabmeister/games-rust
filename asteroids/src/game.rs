@@ -2,6 +2,7 @@ use macroquad::audio::{play_sound, PlaySoundParams, Sound};
 use macroquad::prelude::*;
 
 use crate::assets::Assets;
+use crate::input::InputState;
 use crate::collidable::overlaps;
 use crate::enemy::Enemy;
 use crate::laser::Laser;
@@ -35,15 +36,15 @@ impl Game {
         }
     }
 
-    pub fn update(&mut self, dt: f32) {
-        if is_key_pressed(KeyCode::Q) {
+    pub fn update(&mut self, dt: f32, input: &InputState) {
+        if input.quit {
             self.should_quit = true;
         }
 
         if self.player.alive {
-            self.player.update(dt);
+            self.player.update(dt, input);
 
-            if is_key_pressed(KeyCode::Space) {
+            if input.shoot {
                 self.player_lasers.push(Laser::new(
                     self.player.x, self.player.y, -500.0, self.laser_texture.clone(),
                 ));

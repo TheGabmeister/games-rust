@@ -8,12 +8,14 @@ mod assets;
 mod collidable;
 mod enemy;
 mod game;
+mod input;
 mod laser;
 mod pickup;
 mod player;
 
 use assets::Assets;
 use game::Game;
+use input::InputState;
 
 fn window_conf() -> Conf {
     Conf {
@@ -33,7 +35,8 @@ async fn main() {
     let mut game = Game::new(&assets);
 
     loop {
-        game.update(get_frame_time());
+        let input = InputState::capture();
+        game.update(get_frame_time(), &input);
         game.draw();
 
         if game.should_quit {
