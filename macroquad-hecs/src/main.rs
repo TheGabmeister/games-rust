@@ -5,6 +5,7 @@ use macroquad::prelude::*;
 use hecs::PreparedQuery;
 
 mod components;
+mod collision;
 mod resources;
 mod systems;
 

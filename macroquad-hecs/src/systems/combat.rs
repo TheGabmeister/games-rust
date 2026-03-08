@@ -2,6 +2,7 @@ use macroquad::prelude::Vec2;
 use hecs::*;
 
 use crate::components::*;
+use crate::collision::overlaps;
 use crate::resources::{Resources, SoundId};
 
 /// Collision: projectiles one-shot the first enemy they touch.
@@ -25,7 +26,7 @@ pub fn system_projectile_collision(world: &mut World, res: &mut Resources) {
     let mut hits: Vec<(Entity, Entity)> = Vec::new();
     for &(proj_e, proj_pos, proj_col) in &projs {
         for &(enemy_e, enemy_pos, enemy_col) in &enemies {
-            if proj_col.overlaps(proj_pos, enemy_col, enemy_pos) {
+            if overlaps(proj_col, proj_pos, enemy_col, enemy_pos) {
                 hits.push((proj_e, enemy_e));
                 break; // one hit per projectile
             }
