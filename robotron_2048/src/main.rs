@@ -50,9 +50,10 @@ async fn main() {
 
                 if input.confirm_pressed {
                     world.clear();
-                    batch_spawn_enemies(&mut world, 50);
+                    batch_spawn_enemies(&mut world, 10);
                     spawn_player(&mut world);
                     res.score = 0;
+                    res.player_died = false;
                     res.state = GameState::Playing;
                     start_music(&res);
                 }
@@ -72,11 +73,20 @@ async fn main() {
 
                 // Apply deferred structural changes before logic checks/draw.
                 commands.run_on(&mut world);
+                let player_died = system_grunt_contact_damage(&world);
 
                 system_audio(&mut res);
 
+                if player_died {
+                    res.player_died = true;
+                    res.state = GameState::GameOver;
+                    stop_music(&res);
+                    res.queue_sound(SoundId::Lose);
+                    system_audio(&mut res);
+                }
                 // Wave complete when all enemies are gone.
-                if world.query::<&EnemyKind>().iter().count() == 0 {
+                else if world.query::<&EnemyKind>().iter().count() == 0 {
+                    res.player_died = false;
                     res.state = GameState::GameOver;
                     stop_music(&res);
                     res.queue_sound(SoundId::Lose);
@@ -138,7 +148,12 @@ async fn main() {
                 clear_background(BLACK);
                 let cx = screen_width() / 2.0;
                 let cy = screen_height() / 2.0;
-                draw_text("ALL ENEMIES DEFEATED", cx - 195.0, cy - 40.0, 38.0, GREEN);
+                let (headline, color) = if res.player_died {
+                    ("YOU WERE DESTROYED", RED)
+                } else {
+                    ("ALL ENEMIES DEFEATED", GREEN)
+                };
+                draw_text(headline, cx - 195.0, cy - 40.0, 38.0, color);
                 draw_text(&format!("Score: {}", res.score), cx - 60.0, cy + 10.0, 30.0, WHITE);
                 draw_text("[Enter] main menu", cx - 110.0, cy + 52.0, 22.0, GRAY);
 

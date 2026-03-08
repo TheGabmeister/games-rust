@@ -49,6 +49,7 @@ pub struct Resources {
     // --- runtime state ---
     pub state: GameState,
     pub score: u32,
+    pub player_died: bool,
     pub audio_queue: Vec<SoundId>,
     pub input: InputState,
     pub debug_enabled: bool,
@@ -66,6 +67,7 @@ impl Resources {
             music_spaceshooter: Self::load_snd("music_spaceshooter.ogg").await,
             state: GameState::MainMenu,
             score: 0,
+            player_died: false,
             audio_queue: Vec::new(),
             input: InputState::default(),
             debug_enabled: false,

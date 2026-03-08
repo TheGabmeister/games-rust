@@ -85,3 +85,27 @@ pub fn system_projectile_collision(world: &mut World, cmd: &mut CommandBuffer, r
         res.queue_sound(SoundId::Bump);
     }
 }
+
+/// Grunt contact attack: touching the player is lethal for now.
+pub fn system_grunt_contact_damage(world: &World) -> bool {
+    let player = world
+        .query::<With<(Entity, &Position, &Collider), &Player>>()
+        .iter()
+        .next()
+        .map(|(_, pos, col)| (pos.0, *col));
+
+    let Some((player_pos, player_col)) = player else {
+        return false;
+    };
+
+    for (_, enemy_pos, enemy_col, kind) in world
+        .query::<(Entity, &Position, &Collider, &EnemyKind)>()
+        .iter()
+    {
+        if *kind == EnemyKind::Grunt && overlaps(player_col, player_pos, *enemy_col, enemy_pos.0) {
+            return true;
+        }
+    }
+
+    false
+}

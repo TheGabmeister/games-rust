@@ -5,15 +5,8 @@ use ::rand::RngExt;
 use crate::components::*;
 
 const ENEMY_PALETTE: [Color; 6] = [RED, GREEN, BLUE, YELLOW, ORANGE, MAGENTA];
-const SPAWN_KINDS: [EnemyKind; 7] = [
-    EnemyKind::Grunt,
-    EnemyKind::Hulk,
-    EnemyKind::Brain,
-    EnemyKind::Sphereoid,
-    EnemyKind::Enforcer,
-    EnemyKind::Quark,
-    EnemyKind::Tank,
-];
+// Step 4 baseline: spawn Grunts only until other enemy behaviors are implemented.
+const SPAWN_KINDS: [EnemyKind; 1] = [EnemyKind::Grunt];
 
 pub fn batch_spawn_enemies(world: &mut World, n: usize) {
     let mut rng = ::rand::rng();
