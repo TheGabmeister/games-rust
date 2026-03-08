@@ -24,21 +24,10 @@ impl BoxCollider {
         Rect::new(t.x - rw / 2.0, t.y - rh / 2.0, rw, rh)
     }
 
-    /// Draws the oriented (rotated) bounding box for debug visualization.
+    /// Draws the axis-aligned bounding box used for collision detection.
     pub fn draw_debug(&self, t: &Transform, base_w: f32, base_h: f32, color: Color) {
-        let hw = base_w * t.scale * self.x_scale / 2.0;
-        let hh = base_h * t.scale * self.y_scale / 2.0;
-        let cos_r = t.rot.cos();
-        let sin_r = t.rot.sin();
-        let corners = [(-hw, -hh), (hw, -hh), (hw, hh), (-hw, hh)];
-        let pts: [Vec2; 4] = corners.map(|(cx, cy)| vec2(
-            t.x + cx * cos_r - cy * sin_r,
-            t.y + cx * sin_r + cy * cos_r,
-        ));
-        for i in 0..4 {
-            let j = (i + 1) % 4;
-            draw_line(pts[i].x, pts[i].y, pts[j].x, pts[j].y, 1.5, color);
-        }
+        let r = self.rect(t, base_w, base_h);
+        draw_rectangle_lines(r.x, r.y, r.w, r.h, 1.5, color);
     }
 }
 
