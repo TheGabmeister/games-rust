@@ -10,41 +10,110 @@ mod resources;
 mod systems;
 
 use assets::Assets;
-use components::{Position, Velocity, Speed};
+use components::{Position, Velocity, Speed, Lifetime, Enemy};
+use resources::{GameState, Resources, SoundId};
 use systems::*;
 
-#[macroquad::main("Game")]
+#[macroquad::main("Space Shooter")]
 async fn main() {
-    let assets = Assets::load().await;
+    let assets   = Assets::load().await;
+    let mut res  = Resources::new(assets);
     let mut world = hecs::World::new();
 
-    batch_spawn_entities(&mut world, 50);
-    spawn_player(&mut world, assets.player_ship);
-
-    // Cache PreparedQuery instances once — avoids archetype re-discovery each frame.
+    // Cached PreparedQuery instances — created once, reused every frame.
+    // hecs uses these to skip archetype re-discovery on each call.
     let mut wander_query    = PreparedQuery::<(&mut Velocity, &Speed)>::default();
     let mut integrate_query = PreparedQuery::<(&mut Position, &Velocity)>::default();
-
-    let mut paused = false;
+    let mut lifetime_query  = PreparedQuery::<&mut Lifetime>::default();
 
     loop {
-        if is_key_pressed(KeyCode::Space)  { paused = !paused; }
-        if is_key_pressed(KeyCode::Escape) { break; }
+        match res.state {
 
-        if !paused {
-            system_player_input(&mut world);
-            system_wander_velocity(&mut world, &mut wander_query);
-            system_integrate_velocity(&mut world, &mut integrate_query);
-            system_fire_at_closest(&mut world);
-            system_remove_dead(&mut world);
-        }
+            // ── Main Menu ────────────────────────────────────────────────────
+            GameState::MainMenu => {
+                clear_background(BLACK);
+                let cx = screen_width()  / 2.0;
+                let cy = screen_height() / 2.0;
+                draw_text("SPACE SHOOTER",             cx - 150.0, cy - 50.0, 52.0, WHITE);
+                draw_text("Press [Enter] to start",    cx - 130.0, cy +  8.0, 26.0, GRAY);
+                draw_text("[WASD] move  [LMB] shoot",  cx - 130.0, cy + 40.0, 20.0, DARKGRAY);
 
-        clear_background(BLACK);
-        system_draw(&world);
-        if paused {
-            draw_text("PAUSED  [Space] resume  [Esc] quit", 10.0, 20.0, 20.0, YELLOW);
-        } else {
-            draw_text("[Space] pause  [Esc] quit", 10.0, 20.0, 20.0, GRAY);
+                if is_key_pressed(KeyCode::Enter) {
+                    world.clear();
+                    batch_spawn_entities(&mut world, 50);
+                    spawn_player(&mut world);
+                    res.score = 0;
+                    res.state = GameState::Playing;
+                    res.start_music();
+                }
+            }
+
+            // ── Playing ──────────────────────────────────────────────────────
+            GameState::Playing => {
+                // --- update ---
+                system_player_input(&mut world);
+                system_player_shoot(&mut world, &mut res);
+                system_wander_velocity(&mut world, &mut wander_query);
+                system_integrate_velocity(&mut world, &mut integrate_query);
+                system_fire_at_closest(&mut world);
+                system_projectile_collision(&mut world, &mut res);
+                system_tick_lifetime(&mut world, &mut lifetime_query);
+                system_remove_expired(&mut world);
+                system_remove_dead(&mut world, &mut res);
+                system_audio(&mut res);
+
+                // Wave complete when all enemies are gone.
+                if world.query::<&Enemy>().iter().count() == 0 {
+                    res.state = GameState::GameOver;
+                    res.stop_music();
+                    res.queue_sound(SoundId::Lose);
+                    system_audio(&mut res);
+                }
+
+                if is_key_pressed(KeyCode::Escape) {
+                    res.state = GameState::Paused;
+                }
+
+                // --- draw ---
+                clear_background(BLACK);
+                system_draw(&world, &res);
+                draw_text(&format!("Score: {}", res.score), 10.0, 20.0, 20.0, WHITE);
+                draw_text("[WASD] move  [LMB] shoot  [Esc] pause", 10.0, 40.0, 16.0, DARKGRAY);
+            }
+
+            // ── Paused ───────────────────────────────────────────────────────
+            GameState::Paused => {
+                // Draw the frozen world behind the overlay.
+                clear_background(BLACK);
+                system_draw(&world, &res);
+                draw_rectangle(0.0, 0.0, screen_width(), screen_height(),
+                               Color::new(0.0, 0.0, 0.0, 0.55));
+
+                let cx = screen_width()  / 2.0;
+                let cy = screen_height() / 2.0;
+                draw_text("PAUSED",                        cx - 80.0,  cy - 30.0, 52.0, YELLOW);
+                draw_text("[Space] resume  [Esc] menu",    cx - 140.0, cy + 22.0, 22.0, GRAY);
+
+                if is_key_pressed(KeyCode::Space)  { res.state = GameState::Playing; }
+                if is_key_pressed(KeyCode::Escape) {
+                    res.stop_music();
+                    res.state = GameState::MainMenu;
+                }
+            }
+
+            // ── Game Over ────────────────────────────────────────────────────
+            GameState::GameOver => {
+                clear_background(BLACK);
+                let cx = screen_width()  / 2.0;
+                let cy = screen_height() / 2.0;
+                draw_text("ALL ENEMIES DEFEATED",          cx - 195.0, cy - 40.0, 38.0, GREEN);
+                draw_text(&format!("Score: {}", res.score), cx -  60.0, cy + 10.0, 30.0, WHITE);
+                draw_text("[Enter] main menu",              cx - 110.0, cy + 52.0, 22.0, GRAY);
+
+                if is_key_pressed(KeyCode::Enter) {
+                    res.state = GameState::MainMenu;
+                }
+            }
         }
 
         next_frame().await;
