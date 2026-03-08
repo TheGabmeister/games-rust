@@ -27,6 +27,10 @@ async fn main() {
     let mut commands = CommandBuffer::new();
 
     loop {
+        // Capture all input exactly once per frame into a singleton resource.
+        system_capture_input(&mut res.input);
+        let input = res.input;
+
         match res.state {
             GameState::MainMenu => {
                 clear_background(BLACK);
@@ -36,7 +40,7 @@ async fn main() {
                 draw_text("Press [Enter] to start", cx - 130.0, cy + 8.0, 26.0, GRAY);
                 draw_text("[WASD] move  [LMB] shoot", cx - 130.0, cy + 40.0, 20.0, DARKGRAY);
 
-                if is_key_pressed(KeyCode::Enter) {
+                if input.confirm_pressed {
                     world.clear();
                     batch_spawn_entities(&mut world, 50);
                     spawn_player(&mut world);
@@ -48,8 +52,8 @@ async fn main() {
 
             GameState::Playing => {
                 // --- update ---
-                system_player_input(&mut world);
-                system_player_shoot(&mut world, &mut res);
+                system_player_move(&mut world, input);
+                system_player_shoot(&mut world, input, &mut res);
                 system_wander_velocity(&mut world, &mut wander_query);
                 system_integrate_velocity(&mut world, &mut integrate_query);
                 system_projectile_collision(&world, &mut commands, &mut res);
@@ -69,7 +73,7 @@ async fn main() {
                     system_audio(&mut res);
                 }
 
-                if is_key_pressed(KeyCode::Escape) {
+                if input.cancel_pressed {
                     res.state = GameState::Paused;
                 }
 
@@ -97,10 +101,10 @@ async fn main() {
                 draw_text("PAUSED", cx - 80.0, cy - 30.0, 52.0, YELLOW);
                 draw_text("[Space] resume  [Esc] menu", cx - 140.0, cy + 22.0, 22.0, GRAY);
 
-                if is_key_pressed(KeyCode::Space) {
+                if input.resume_pressed {
                     res.state = GameState::Playing;
                 }
-                if is_key_pressed(KeyCode::Escape) {
+                if input.cancel_pressed {
                     stop_music(&res);
                     res.state = GameState::MainMenu;
                 }
@@ -114,7 +118,7 @@ async fn main() {
                 draw_text(&format!("Score: {}", res.score), cx - 60.0, cy + 10.0, 30.0, WHITE);
                 draw_text("[Enter] main menu", cx - 110.0, cy + 52.0, 22.0, GRAY);
 
-                if is_key_pressed(KeyCode::Enter) {
+                if input.confirm_pressed {
                     res.state = GameState::MainMenu;
                 }
             }
