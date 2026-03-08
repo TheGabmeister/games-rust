@@ -1,7 +1,9 @@
 use macroquad::prelude::*;
 
+use crate::box_collider::Obb;
+
 pub trait Collidable {
-    fn collider(&self) -> Rect;
+    fn collider(&self) -> Obb;
 }
 
 pub fn overlaps(a: &impl Collidable, b: &impl Collidable) -> bool {
@@ -9,6 +11,9 @@ pub fn overlaps(a: &impl Collidable, b: &impl Collidable) -> bool {
 }
 
 pub fn draw_debug(entity: &impl Collidable, color: Color) {
-    let r = entity.collider();
-    draw_rectangle_lines(r.x, r.y, r.w, r.h, 1.5, color);
+    let pts = entity.collider().corners();
+    for i in 0..4 {
+        let j = (i + 1) % 4;
+        draw_line(pts[i].x, pts[i].y, pts[j].x, pts[j].y, 1.5, color);
+    }
 }

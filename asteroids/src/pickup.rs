@@ -1,6 +1,6 @@
 use macroquad::prelude::*;
 
-use crate::box_collider::BoxCollider;
+use crate::box_collider::{BoxCollider, Obb};
 use crate::collidable::Collidable;
 use crate::sprite::Sprite;
 use crate::transform::Transform;
@@ -29,8 +29,8 @@ impl Pickup {
 }
 
 impl Collidable for Pickup {
-    fn collider(&self) -> Rect {
-        self.box_collider.rect(
+    fn collider(&self) -> Obb {
+        self.box_collider.obb(
             &self.transform,
             self.sprite.texture.width(),
             self.sprite.texture.height(),

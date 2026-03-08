@@ -1,6 +1,6 @@
 use macroquad::prelude::*;
 
-use crate::box_collider::BoxCollider;
+use crate::box_collider::{BoxCollider, Obb};
 use crate::collidable::Collidable;
 use crate::input::InputState;
 use crate::sprite::Sprite;
@@ -76,8 +76,8 @@ impl Player {
 }
 
 impl Collidable for Player {
-    fn collider(&self) -> Rect {
-        self.box_collider.rect(
+    fn collider(&self) -> Obb {
+        self.box_collider.obb(
             &self.transform,
             self.sprite.texture.width(),
             self.sprite.texture.height(),
