@@ -7,7 +7,16 @@ pub struct Velocity(pub Vec2);
 
 // --- Stats ---
 pub struct Speed(pub f32);
+pub struct Health(pub i32);
 pub struct Lifetime(pub f32); // seconds until auto-despawn
+pub struct FireCooldown {
+    pub remaining: f32,
+    pub period: f32,
+}
+pub struct SpawnCooldown {
+    pub remaining: f32,
+    pub period: f32,
+}
 
 // --- Rendering ---
 #[derive(Clone, Copy)]
@@ -37,9 +46,38 @@ pub enum Collider {
 
 // --- Tags ---
 pub struct Player;
-pub struct Enemy;
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum EnemyKind {
+    Grunt,
+    Hulk,
+    Brain,
+    Sphereoid,
+    Enforcer,
+    Quark,
+    Tank,
+    Prog,
+}
+pub struct Invulnerable(pub bool);
 
 // --- Relationships ---
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum Faction {
+    Player,
+    Enemy,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum ProjectileKind {
+    PlayerLaser,
+    EnforcerSpark,
+    TankShell,
+    CruiseMissile,
+}
+
+#[derive(Clone, Copy)]
 pub struct Projectile {
     pub owner: Entity,
+    pub faction: Faction,
+    pub kind: ProjectileKind,
+    pub damage: i32,
 }

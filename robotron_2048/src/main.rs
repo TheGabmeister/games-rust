@@ -9,7 +9,7 @@ mod components;
 mod resources;
 mod systems;
 
-use components::{Enemy, Lifetime, Position, Velocity};
+use components::{EnemyKind, Lifetime, Position, Velocity};
 use resources::{GameState, Resources, SoundId};
 use systems::*;
 
@@ -50,7 +50,7 @@ async fn main() {
 
                 if input.confirm_pressed {
                     world.clear();
-                    batch_spawn_entities(&mut world, 50);
+                    batch_spawn_enemies(&mut world, 50);
                     spawn_player(&mut world);
                     res.score = 0;
                     res.state = GameState::Playing;
@@ -60,6 +60,9 @@ async fn main() {
 
             GameState::Playing => {
                 // --- update ---
+                system_enemy_ai(&mut world);
+                system_enemy_attack(&mut world);
+                system_enemy_spawn(&mut world);
                 system_player_move(&mut world, input);
                 system_player_shoot(&mut world, input, &mut res);
                 system_integrate_velocity(&mut world, &mut integrate_query);
@@ -73,7 +76,7 @@ async fn main() {
                 system_audio(&mut res);
 
                 // Wave complete when all enemies are gone.
-                if world.query::<&Enemy>().iter().count() == 0 {
+                if world.query::<&EnemyKind>().iter().count() == 0 {
                     res.state = GameState::GameOver;
                     stop_music(&res);
                     res.queue_sound(SoundId::Lose);

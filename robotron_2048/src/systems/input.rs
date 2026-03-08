@@ -68,7 +68,12 @@ pub fn system_player_shoot(world: &mut World, input: InputState, res: &mut Resou
         Position(origin),
         Velocity(dir * BULLET_SPEED),
         Lifetime(BULLET_LIFE),
-        Projectile { owner },
+        Projectile {
+            owner,
+            faction: Faction::Player,
+            kind: ProjectileKind::PlayerLaser,
+            damage: 1,
+        },
         Collider::Circle { radius: 4.0 },
         Sprite {
             texture: TextureId::PlayerLaser,
