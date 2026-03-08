@@ -3,7 +3,7 @@ use macroquad::prelude::*;
 
 use crate::assets::Assets;
 use crate::asteroid::Asteroid;
-use crate::collidable::{overlaps, Collidable};
+use crate::collidable::overlaps;
 use crate::enemy::Enemy;
 use crate::input::InputState;
 use crate::laser::Laser;
@@ -173,16 +173,12 @@ impl Game {
 
         if self.debug {
             let color = Color::new(0.0, 1.0, 0.0, 0.8);
-            let draw_collider = |c: &dyn Collidable| {
-                let r = c.collider();
-                draw_rectangle_lines(r.x, r.y, r.w, r.h, 1.5, color);
-            };
-            if self.player.alive { draw_collider(&self.player); }
-            if self.enemy.alive  { draw_collider(&self.enemy); }
-            if self.pickup.alive { draw_collider(&self.pickup); }
-            for a in &self.asteroids     { draw_collider(a); }
-            for l in &self.player_lasers { draw_collider(l); }
-            for l in &self.enemy_lasers  { draw_collider(l); }
+            if self.player.alive { self.player.draw_collider_debug(color); }
+            if self.enemy.alive  { self.enemy.draw_collider_debug(color); }
+            if self.pickup.alive { self.pickup.draw_collider_debug(color); }
+            for a in &self.asteroids     { a.draw_collider_debug(color); }
+            for l in &self.player_lasers { l.draw_collider_debug(color); }
+            for l in &self.enemy_lasers  { l.draw_collider_debug(color); }
         }
 
         draw_text(&format!("Lives: {}", self.player.lives), 10.0, 24.0, 24.0, WHITE);
