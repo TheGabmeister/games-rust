@@ -71,6 +71,9 @@ fn system_fire_at_closest(world: &mut World) {
     for (id0, pos0, dmg0, kc0) in
         &mut world.query::<With<(Entity, &Position, &Damage, &mut KillCount), &Health>>()
     {
+        // Skip if killed earlier this tick. Borrow is dropped at end of expression.
+        if world.get::<&Health>(id0).map_or(true, |hp| hp.0 <= 0) { continue; }
+
         // Find closest:
         // Nested queries are O(n^2) and you usually want to avoid that by using some sort of
         // spatial index like a quadtree or more general BVH, which we don't bother with here since
@@ -83,7 +86,7 @@ fn system_fire_at_closest(world: &mut World) {
             .filter(|(id1, _)| *id1 != id0)
             .filter(|(_, pos1)| manhattan_dist(pos0.x, pos1.x, pos0.y, pos1.y) <= ATTACK_RANGE)
             .min_by_key(|(_, pos1)| manhattan_dist(pos0.x, pos1.x, pos0.y, pos1.y))
-            .map(|(entity, _pos)| entity);
+            .map(|(entity, _)| entity);
 
         let closest = match closest {
             Some(entity) => entity,
