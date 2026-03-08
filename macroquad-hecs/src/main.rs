@@ -20,11 +20,15 @@ struct Damage(i32);
 #[derive(Debug)]
 struct KillCount(i32);
 
+struct Tint(Color);
+
 fn manhattan_dist(x0: f32, x1: f32, y0: f32, y1: f32) -> i32 {
     let dx = (x0 - x1).abs();
     let dy = (y0 - y1).abs();
     (dx + dy) as i32
 }
+
+const PALETTE: [Color; 6] = [RED, GREEN, BLUE, YELLOW, ORANGE, MAGENTA];
 
 fn batch_spawn_entities(world: &mut World, n: usize) {
     let mut rng = ::rand::rng();
@@ -38,8 +42,9 @@ fn batch_spawn_entities(world: &mut World, n: usize) {
         let hp = Health(rng.random_range(30..50));
         let dmg = Damage(rng.random_range(1..10));
         let kc = KillCount(0);
+        let tint = Tint(PALETTE[rng.random_range(0..PALETTE.len())]);
 
-        (pos, s, hp, dmg, kc)
+        (pos, s, hp, dmg, kc, tint)
     });
 
     world.spawn_batch(to_spawn);
@@ -121,8 +126,8 @@ fn system_remove_dead(world: &mut World) {
 }
 
 fn system_draw(world: &World) {
-    for (pos, hp, kc) in world.query::<(&Position, &Health, &KillCount)>().iter() {
-        draw_circle(pos.x, pos.y, 10.0, GREEN);
+    for (pos, hp, kc, tint) in world.query::<(&Position, &Health, &KillCount, &Tint)>().iter() {
+        draw_circle(pos.x, pos.y, 10.0, tint.0);
         draw_text(
             &format!("HP:{} K:{}", hp.0, kc.0),
             pos.x - 10.0,
