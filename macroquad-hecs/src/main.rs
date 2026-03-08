@@ -75,10 +75,13 @@ fn system_fire_at_closest(world: &mut World) {
         // Nested queries are O(n^2) and you usually want to avoid that by using some sort of
         // spatial index like a quadtree or more general BVH, which we don't bother with here since
         // it's out of scope for the example.
+        const ATTACK_RANGE: i32 = 80;
+
         let closest = world
             .query::<With<(Entity, &Position), &Health>>()
             .iter()
             .filter(|(id1, _)| *id1 != id0)
+            .filter(|(_, pos1)| manhattan_dist(pos0.x, pos1.x, pos0.y, pos1.y) <= ATTACK_RANGE)
             .min_by_key(|(_, pos1)| manhattan_dist(pos0.x, pos1.x, pos0.y, pos1.y))
             .map(|(entity, _pos)| entity);
 
