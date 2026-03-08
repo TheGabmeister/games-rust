@@ -1,22 +1,22 @@
 use macroquad::prelude::*;
 
 use crate::collidable::Collidable;
+use crate::sprite::Sprite;
+use crate::transform::Transform;
 
 pub struct Enemy {
-    pub x:     f32,
-    pub y:     f32,
-    pub alive: bool,
-    texture:   Texture2D,
-    shoot_timer: f32,
+    pub transform:   Transform,
+    pub alive:       bool,
+    sprite:          Sprite,
+    shoot_timer:     f32,
 }
 
 impl Enemy {
     pub fn new(texture: Texture2D) -> Self {
         Self {
-            x:           100.0,
-            y:           100.0,
-            texture,
+            transform:   Transform::new(100.0, 100.0),
             alive:       true,
+            sprite:      Sprite::new(texture),
             shoot_timer: 5.0,
         }
     }
@@ -32,16 +32,12 @@ impl Enemy {
     }
 
     pub fn draw(&self) {
-        let hw = self.texture.width() / 2.0;
-        let hh = self.texture.height() / 2.0;
-        draw_texture(&self.texture, self.x - hw, self.y - hh, WHITE);
+        self.sprite.draw(&self.transform);
     }
 }
 
 impl Collidable for Enemy {
     fn collider(&self) -> Rect {
-        let hw = self.texture.width() / 2.0;
-        let hh = self.texture.height() / 2.0;
-        Rect::new(self.x - hw, self.y - hh, self.texture.width(), self.texture.height())
+        self.sprite.collider(&self.transform)
     }
 }

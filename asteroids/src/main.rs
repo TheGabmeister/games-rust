@@ -13,6 +13,8 @@ mod input;
 mod laser;
 mod pickup;
 mod player;
+mod sprite;
+mod transform;
 
 use assets::Assets;
 use game::Game;
