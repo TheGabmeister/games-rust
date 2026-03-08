@@ -1,5 +1,9 @@
+#![windows_subsystem = "windows"]
+
+use macroquad::audio::{load_sound, play_sound, PlaySoundParams};
 use macroquad::prelude::*;
 use serde::Deserialize;
+
 
 fn window_conf() -> Conf {
     Conf {
@@ -17,13 +21,24 @@ struct TextureEntry {
 }
 
 #[derive(Deserialize)]
+struct SoundEntry {
+    id: String,
+    path: String,
+}
+
+#[derive(Deserialize)]
 struct Assets {
     textures: Vec<TextureEntry>,
+    sounds: Vec<SoundEntry>,
 }
 
 impl Assets {
     fn texture_path(&self, id: &str) -> Option<&str> {
         self.textures.iter().find(|t| t.id == id).map(|t| t.path.as_str())
+    }
+
+    fn sound_path(&self, id: &str) -> Option<&str> {
+        self.sounds.iter().find(|s| s.id == id).map(|s| s.path.as_str())
     }
 }
 
@@ -92,6 +107,10 @@ async fn main() {
     let player_path = assets.texture_path("player").expect("No 'player' texture in assets.json");
     let player_texture = load_texture(player_path).await.expect("Failed to load player texture");
 
+    let music_path = assets.sound_path("music").expect("No 'music' sound in assets.json");
+    let music = load_sound(music_path).await.expect("Failed to load music");
+    play_sound(&music, PlaySoundParams { looped: true, volume: 1.0 });
+
     let mut state = GameState::new();
     let mut player = Player::new(player_texture);
 
@@ -100,12 +119,12 @@ async fn main() {
         state.update();
         player.update(dt);
 
-        if state.should_quit {
-            std::process::exit(0);
-        }
-
         clear_background(BLACK);
         player.draw();
+
+        if state.should_quit {
+            break;
+        }
 
         next_frame().await
     }
