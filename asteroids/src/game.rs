@@ -24,6 +24,23 @@ impl Game {
     }
 
     pub fn update(&mut self) {
+        let direction = self.process_input();
+
+        self.player.pos += direction * self.player.speed * get_frame_time();
+
+        self.player.pos.x = self
+            .player
+            .pos
+            .x
+            .clamp(0.0, screen_width() - self.player.size.x);
+        self.player.pos.y = self
+            .player
+            .pos
+            .y
+            .clamp(0.0, screen_height() - self.player.size.y);
+    }
+
+    fn process_input(&mut self) -> Vec2 {
         if is_key_pressed(KeyCode::Escape) {
             self.should_quit = true;
         }
@@ -46,18 +63,7 @@ impl Game {
             direction = direction.normalize();
         }
 
-        self.player.pos += direction * self.player.speed * get_frame_time();
-
-        self.player.pos.x = self
-            .player
-            .pos
-            .x
-            .clamp(0.0, screen_width() - self.player.size.x);
-        self.player.pos.y = self
-            .player
-            .pos
-            .y
-            .clamp(0.0, screen_height() - self.player.size.y);
+        direction
     }
 
     pub fn draw(&self) {

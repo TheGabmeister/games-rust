@@ -18,10 +18,10 @@ async fn main() {
 
     loop {
         game.update();
+        game.draw();
         if game.should_quit {
             break;
         }
-        game.draw();
         next_frame().await;
     }
 }
