@@ -19,6 +19,7 @@ enum TextureAsset {
     PlayerShip,
     PlayerLaser,
     EnemyUfoGreen,
+    PillBlue,
 }
 
 impl TextureAsset {
@@ -27,6 +28,7 @@ impl TextureAsset {
             Self::PlayerShip    => "player_ship.png",
             Self::PlayerLaser   => "player_laser.png",
             Self::EnemyUfoGreen => "enemy_ufo_green.png",
+            Self::PillBlue      => "pill_blue.png",
         };
         format!("{}/{}", ASSETS_DIR, file)
     }
@@ -67,6 +69,7 @@ struct Player {
     speed: f32,
     texture: Texture2D,
     alive: bool,
+    lives: u32,
 }
 
 impl Player {
@@ -77,6 +80,7 @@ impl Player {
             speed: 200.0,
             texture,
             alive: true,
+            lives: 3,
         }
     }
 
@@ -186,6 +190,31 @@ impl Enemy {
     }
 }
 
+struct Pickup {
+    x: f32,
+    y: f32,
+    texture: Texture2D,
+    alive: bool,
+}
+
+impl Pickup {
+    fn new(x: f32, y: f32, texture: Texture2D) -> Self {
+        Self { x, y, texture, alive: true }
+    }
+
+    fn collider(&self) -> Rect {
+        let hw = self.texture.width() / 2.0;
+        let hh = self.texture.height() / 2.0;
+        Rect::new(self.x - hw, self.y - hh, self.texture.width(), self.texture.height())
+    }
+
+    fn draw(&self) {
+        let hw = self.texture.width() / 2.0;
+        let hh = self.texture.height() / 2.0;
+        draw_texture(&self.texture, self.x - hw, self.y - hh, WHITE);
+    }
+}
+
 struct GameState {
     should_quit: bool,
 }
@@ -207,6 +236,7 @@ async fn main() {
     let player_texture = TextureAsset::PlayerShip.load().await;
     let laser_texture  = TextureAsset::PlayerLaser.load().await;
     let enemy_texture  = TextureAsset::EnemyUfoGreen.load().await;
+    let pill_texture   = TextureAsset::PillBlue.load().await;
     let music          = SoundAsset::MusicSpaceshooter.load().await;
     let sfx_laser      = SoundAsset::SfxLaser.load().await;
 
@@ -215,6 +245,7 @@ async fn main() {
     let mut state = GameState::new();
     let mut player = Player::new(player_texture);
     let mut enemy = Enemy::new(enemy_texture);
+    let mut pickup = Pickup::new(600.0, 450.0, pill_texture);
     let mut player_lasers: Vec<Laser> = Vec::new();
     let mut enemy_lasers: Vec<Laser> = Vec::new();
 
@@ -252,6 +283,11 @@ async fn main() {
                     player.alive = false;
                 }
             }
+
+            if pickup.alive && player.collider().overlaps(&pickup.collider()) {
+                pickup.alive = false;
+                player.lives += 1;
+            }
         }
 
         for laser in &mut player_lasers { laser.update(dt); }
@@ -262,8 +298,11 @@ async fn main() {
         clear_background(BLACK);
         if player.alive { player.draw(); }
         if enemy.alive  { enemy.draw(); }
+        if pickup.alive { pickup.draw(); }
         for laser in &player_lasers { laser.draw(); }
         for laser in &enemy_lasers  { laser.draw(); }
+
+        draw_text(&format!("Lives: {}", player.lives), 10.0, 24.0, 24.0, WHITE);
 
         if state.should_quit {
             break;
