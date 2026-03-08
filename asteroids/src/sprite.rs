@@ -28,17 +28,6 @@ impl Sprite {
         );
     }
 
-    /// Axis-aligned bounding box of the (possibly rotated, scaled) sprite.
-    pub fn collider(&self, t: &Transform) -> Rect {
-        let w = self.texture.width()  * t.scale;
-        let h = self.texture.height() * t.scale;
-        let cos_a = t.rot.cos().abs();
-        let sin_a = t.rot.sin().abs();
-        let rw = w * cos_a + h * sin_a;
-        let rh = w * sin_a + h * cos_a;
-        Rect::new(t.x - rw / 2.0, t.y - rh / 2.0, rw, rh)
-    }
-
     /// Half-dimensions after scaling, useful for screen-wrapping.
     pub fn half_size(&self, scale: f32) -> (f32, f32) {
         (self.texture.width() * scale / 2.0, self.texture.height() * scale / 2.0)

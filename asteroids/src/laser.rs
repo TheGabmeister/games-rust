@@ -1,5 +1,6 @@
 use macroquad::prelude::*;
 
+use crate::box_collider::BoxCollider;
 use crate::collidable::Collidable;
 use crate::sprite::Sprite;
 use crate::transform::Transform;
@@ -8,6 +9,7 @@ pub struct Laser {
     pub transform: Transform,
     pub alive:     bool,
     sprite:        Sprite,
+    box_collider:  BoxCollider,
     vx:            f32,
     vy:            f32,
 }
@@ -16,7 +18,14 @@ impl Laser {
     pub fn new(x: f32, y: f32, vx: f32, vy: f32, texture: Texture2D) -> Self {
         let mut transform = Transform::new(x, y);
         transform.rot = vx.atan2(-vy);
-        Self { transform, vx, vy, sprite: Sprite::new(texture), alive: true }
+        Self {
+            transform,
+            alive:        true,
+            sprite:       Sprite::new(texture),
+            box_collider: BoxCollider::default(),
+            vx,
+            vy,
+        }
     }
 
     pub fn update(&mut self, dt: f32) {
@@ -37,6 +46,10 @@ impl Laser {
 
 impl Collidable for Laser {
     fn collider(&self) -> Rect {
-        self.sprite.collider(&self.transform)
+        self.box_collider.rect(
+            &self.transform,
+            self.sprite.texture.width(),
+            self.sprite.texture.height(),
+        )
     }
 }

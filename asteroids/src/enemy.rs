@@ -1,5 +1,6 @@
 use macroquad::prelude::*;
 
+use crate::box_collider::BoxCollider;
 use crate::collidable::Collidable;
 use crate::sprite::Sprite;
 use crate::transform::Transform;
@@ -8,16 +9,18 @@ pub struct Enemy {
     pub transform:   Transform,
     pub alive:       bool,
     sprite:          Sprite,
+    box_collider:    BoxCollider,
     shoot_timer:     f32,
 }
 
 impl Enemy {
     pub fn new(texture: Texture2D) -> Self {
         Self {
-            transform:   Transform::new(100.0, 100.0),
-            alive:       true,
-            sprite:      Sprite::new(texture),
-            shoot_timer: 5.0,
+            transform:    Transform::new(100.0, 100.0),
+            alive:        true,
+            sprite:       Sprite::new(texture),
+            box_collider: BoxCollider::default(),
+            shoot_timer:  5.0,
         }
     }
 
@@ -38,6 +41,10 @@ impl Enemy {
 
 impl Collidable for Enemy {
     fn collider(&self) -> Rect {
-        self.sprite.collider(&self.transform)
+        self.box_collider.rect(
+            &self.transform,
+            self.sprite.texture.width(),
+            self.sprite.texture.height(),
+        )
     }
 }

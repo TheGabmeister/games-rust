@@ -1,5 +1,6 @@
 use macroquad::prelude::*;
 
+use crate::box_collider::BoxCollider;
 use crate::collidable::Collidable;
 use crate::input::InputState;
 use crate::sprite::Sprite;
@@ -11,23 +12,25 @@ const BRAKE:        f32 = 3.0;   // damping factor when S is held
 const MAX_SPEED:    f32 = 400.0;
 
 pub struct Player {
-    pub transform: Transform,
-    pub alive:     bool,
-    pub lives:     u32,
-    sprite:        Sprite,
-    vx:            f32,
-    vy:            f32,
+    pub transform:    Transform,
+    pub alive:        bool,
+    pub lives:        u32,
+    sprite:           Sprite,
+    box_collider:     BoxCollider,
+    vx:               f32,
+    vy:               f32,
 }
 
 impl Player {
     pub fn new(texture: Texture2D) -> Self {
         Self {
-            transform: Transform::new(screen_width() / 2.0, screen_height() / 2.0),
-            alive:     true,
-            lives:     3,
-            sprite:    Sprite::new(texture),
-            vx:        0.0,
-            vy:        0.0,
+            transform:    Transform::new(screen_width() / 2.0, screen_height() / 2.0),
+            alive:        true,
+            lives:        3,
+            sprite:       Sprite::new(texture),
+            box_collider: BoxCollider::default(),
+            vx:           0.0,
+            vy:           0.0,
         }
     }
 
@@ -73,6 +76,10 @@ impl Player {
 
 impl Collidable for Player {
     fn collider(&self) -> Rect {
-        self.sprite.collider(&self.transform)
+        self.box_collider.rect(
+            &self.transform,
+            self.sprite.texture.width(),
+            self.sprite.texture.height(),
+        )
     }
 }

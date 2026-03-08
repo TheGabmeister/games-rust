@@ -6,6 +6,7 @@ use macroquad::prelude::*;
 
 mod asteroid;
 mod assets;
+mod box_collider;
 mod collidable;
 mod enemy;
 mod game;
