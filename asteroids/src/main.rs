@@ -215,19 +215,98 @@ impl Pickup {
     }
 }
 
-struct GameState {
-    should_quit: bool,
+struct Game {
+    player:        Player,
+    enemy:         Enemy,
+    pickup:        Pickup,
+    player_lasers: Vec<Laser>,
+    enemy_lasers:  Vec<Laser>,
+    laser_texture: Texture2D,
+    sfx_laser:     Sound,
+    should_quit:   bool,
 }
 
-impl GameState {
-    fn new() -> Self {
-        Self { should_quit: false }
+impl Game {
+    fn new(
+        player_texture: Texture2D,
+        laser_texture:  Texture2D,
+        enemy_texture:  Texture2D,
+        pill_texture:   Texture2D,
+        sfx_laser:      Sound,
+    ) -> Self {
+        Self {
+            player:        Player::new(player_texture),
+            enemy:         Enemy::new(enemy_texture),
+            pickup:        Pickup::new(600.0, 450.0, pill_texture),
+            player_lasers: Vec::new(),
+            enemy_lasers:  Vec::new(),
+            laser_texture,
+            sfx_laser,
+            should_quit:   false,
+        }
     }
 
-    fn update(&mut self) {
+    fn update(&mut self, dt: f32) {
         if is_key_pressed(KeyCode::Q) {
             self.should_quit = true;
         }
+
+        if self.player.alive {
+            self.player.update(dt);
+
+            if is_key_pressed(KeyCode::Space) {
+                self.player_lasers.push(Laser::new(
+                    self.player.x, self.player.y, -500.0, self.laser_texture.clone(),
+                ));
+                play_sound(&self.sfx_laser, PlaySoundParams { looped: false, volume: 1.0 });
+            }
+        }
+
+        if self.enemy.alive {
+            if self.enemy.update(dt) {
+                self.enemy_lasers.push(Laser::new(
+                    self.enemy.x, self.enemy.y, 500.0, self.laser_texture.clone(),
+                ));
+                play_sound(&self.sfx_laser, PlaySoundParams { looped: false, volume: 1.0 });
+            }
+
+            for laser in &mut self.player_lasers {
+                if laser.alive && laser.collider().overlaps(&self.enemy.collider()) {
+                    laser.alive = false;
+                    self.enemy.alive = false;
+                }
+            }
+        }
+
+        if self.player.alive {
+            for laser in &mut self.enemy_lasers {
+                if laser.alive && laser.collider().overlaps(&self.player.collider()) {
+                    laser.alive = false;
+                    self.player.alive = false;
+                }
+            }
+
+            if self.pickup.alive && self.player.collider().overlaps(&self.pickup.collider()) {
+                self.pickup.alive = false;
+                self.player.lives += 1;
+            }
+        }
+
+        for laser in &mut self.player_lasers { laser.update(dt); }
+        for laser in &mut self.enemy_lasers  { laser.update(dt); }
+        self.player_lasers.retain(|l| l.alive);
+        self.enemy_lasers.retain(|l| l.alive);
+    }
+
+    fn draw(&self) {
+        clear_background(BLACK);
+        if self.player.alive { self.player.draw(); }
+        if self.enemy.alive  { self.enemy.draw(); }
+        if self.pickup.alive { self.pickup.draw(); }
+        for laser in &self.player_lasers { laser.draw(); }
+        for laser in &self.enemy_lasers  { laser.draw(); }
+
+        draw_text(&format!("Lives: {}", self.player.lives), 10.0, 24.0, 24.0, WHITE);
     }
 }
 
@@ -242,69 +321,13 @@ async fn main() {
 
     play_sound(&music, PlaySoundParams { looped: true, volume: 1.0 });
 
-    let mut state = GameState::new();
-    let mut player = Player::new(player_texture);
-    let mut enemy = Enemy::new(enemy_texture);
-    let mut pickup = Pickup::new(600.0, 450.0, pill_texture);
-    let mut player_lasers: Vec<Laser> = Vec::new();
-    let mut enemy_lasers: Vec<Laser> = Vec::new();
+    let mut game = Game::new(player_texture, laser_texture, enemy_texture, pill_texture, sfx_laser);
 
     loop {
-        let dt = get_frame_time();
-        state.update();
+        game.update(get_frame_time());
+        game.draw();
 
-        if player.alive {
-            player.update(dt);
-
-            if is_key_pressed(KeyCode::Space) {
-                player_lasers.push(Laser::new(player.x, player.y, -500.0, laser_texture.clone()));
-                play_sound(&sfx_laser, PlaySoundParams { looped: false, volume: 1.0 });
-            }
-        }
-
-        if enemy.alive {
-            if enemy.update(dt) {
-                enemy_lasers.push(Laser::new(enemy.x, enemy.y, 500.0, laser_texture.clone()));
-                play_sound(&sfx_laser, PlaySoundParams { looped: false, volume: 1.0 });
-            }
-
-            for laser in &mut player_lasers {
-                if laser.alive && laser.collider().overlaps(&enemy.collider()) {
-                    laser.alive = false;
-                    enemy.alive = false;
-                }
-            }
-        }
-
-        if player.alive {
-            for laser in &mut enemy_lasers {
-                if laser.alive && laser.collider().overlaps(&player.collider()) {
-                    laser.alive = false;
-                    player.alive = false;
-                }
-            }
-
-            if pickup.alive && player.collider().overlaps(&pickup.collider()) {
-                pickup.alive = false;
-                player.lives += 1;
-            }
-        }
-
-        for laser in &mut player_lasers { laser.update(dt); }
-        for laser in &mut enemy_lasers  { laser.update(dt); }
-        player_lasers.retain(|l| l.alive);
-        enemy_lasers.retain(|l| l.alive);
-
-        clear_background(BLACK);
-        if player.alive { player.draw(); }
-        if enemy.alive  { enemy.draw(); }
-        if pickup.alive { pickup.draw(); }
-        for laser in &player_lasers { laser.draw(); }
-        for laser in &enemy_lasers  { laser.draw(); }
-
-        draw_text(&format!("Lives: {}", player.lives), 10.0, 24.0, 24.0, WHITE);
-
-        if state.should_quit {
+        if game.should_quit {
             break;
         }
 
