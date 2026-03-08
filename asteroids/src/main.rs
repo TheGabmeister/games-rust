@@ -1,13 +1,5 @@
 use macroquad::prelude::*;
 
-mod assets;
-mod debug;
-mod entities;
-mod game;
-mod render;
-mod state;
-mod systems;
-
 use game::Game;
 
 fn window_conf() -> Conf {
