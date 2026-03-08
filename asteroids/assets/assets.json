@@ -1,11 +1,12 @@
 {
   "textures": [
-    { "id": "player", "name": "Player Ship",  "path": "assets/player_ship.png" },
-    { "id": "enemy",  "name": "Enemy UFO",    "path": "assets/enemy_ufo_green.png" }
+    { "path": "assets/player_ship.png" },
+    { "path": "assets/player_laser.png" },
+    { "path": "assets/enemy_ufo_green.png" }
   ],
   "sounds": [
-    { "id": "laser", "name": "Laser SFX",            "path": "assets/sfx_laser1.ogg" },
-    { "id": "lose",  "name": "Lose SFX",             "path": "assets/sfx_lose.ogg" },
-    { "id": "music", "name": "Space Shooter Music",  "path": "assets/music_spaceshooter.ogg" }
+    { "path": "assets/sfx_laser1.ogg" },
+    { "path": "assets/sfx_lose.ogg" },
+    { "path": "assets/music_spaceshooter.ogg" }
   ]
 }
