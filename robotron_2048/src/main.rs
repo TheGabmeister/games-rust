@@ -131,6 +131,7 @@ fn update_playing_step(
     system_player_move(world, input);
     system_player_shoot(world, input, res);
     system_integrate_velocity(world, &mut sim.integrate_query, dt);
+    system_clamp_to_arena(world);
     system_projectile_collision(world, &mut sim.commands, res);
     system_tick_lifetime(world, &mut sim.lifetime_query, dt);
     system_remove_expired(world, &mut sim.commands);
