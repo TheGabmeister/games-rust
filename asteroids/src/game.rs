@@ -3,9 +3,9 @@ use macroquad::prelude::*;
 
 use crate::assets::Assets;
 use crate::asteroid::Asteroid;
-use crate::input::InputState;
-use crate::collidable::overlaps;
+use crate::collidable::{overlaps, Collidable};
 use crate::enemy::Enemy;
+use crate::input::InputState;
 use crate::laser::Laser;
 use crate::pickup::Pickup;
 use crate::player::Player;
@@ -25,6 +25,7 @@ pub struct Game {
     pub should_quit: bool,
     score:         u32,
     respawn_timer: Option<f32>,
+    debug:         bool,
 }
 
 impl Game {
@@ -49,12 +50,17 @@ impl Game {
             should_quit:   false,
             score:         0,
             respawn_timer: None,
+            debug:         false,
         }
     }
 
     pub fn update(&mut self, dt: f32, input: &InputState) {
         if input.quit {
             self.should_quit = true;
+        }
+
+        if is_key_pressed(KeyCode::F1) {
+            self.debug = !self.debug;
         }
 
         if self.player.alive {
@@ -164,6 +170,20 @@ impl Game {
         for asteroid in &self.asteroids { asteroid.draw(); }
         for laser in &self.player_lasers { laser.draw(); }
         for laser in &self.enemy_lasers  { laser.draw(); }
+
+        if self.debug {
+            let color = Color::new(0.0, 1.0, 0.0, 0.8);
+            let draw_collider = |c: &dyn Collidable| {
+                let r = c.collider();
+                draw_rectangle_lines(r.x, r.y, r.w, r.h, 1.5, color);
+            };
+            if self.player.alive { draw_collider(&self.player); }
+            if self.enemy.alive  { draw_collider(&self.enemy); }
+            if self.pickup.alive { draw_collider(&self.pickup); }
+            for a in &self.asteroids     { draw_collider(a); }
+            for l in &self.player_lasers { draw_collider(l); }
+            for l in &self.enemy_lasers  { draw_collider(l); }
+        }
 
         draw_text(&format!("Lives: {}", self.player.lives), 10.0, 24.0, 24.0, WHITE);
         draw_text(&format!("Score: {}", self.score), 10.0, 50.0, 24.0, WHITE);
