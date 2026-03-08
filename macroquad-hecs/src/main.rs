@@ -87,10 +87,7 @@ fn system_fire_at_closest(world: &mut World) {
 
         let closest = match closest {
             Some(entity) => entity,
-            None => {
-    
-                return;
-            }
+            None => continue,
         };
 
         // Deal damage:
@@ -145,7 +142,7 @@ fn system_draw(world: &World) {
 async fn main() {
     let mut world = World::new();
 
-    batch_spawn_entities(&mut world, 5);
+    batch_spawn_entities(&mut world, 50);
 
     let mut motion_query = PreparedQuery::<(Entity, &mut Position, &Speed)>::default();
     let mut paused = false;
