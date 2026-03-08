@@ -2,6 +2,9 @@ use macroquad::prelude::*;
 use hecs::*;
 use ::rand::RngExt;
 
+mod assets;
+use assets::Assets;
+
 #[derive(Debug)]
 struct Position {
     x: f32,
@@ -56,11 +59,12 @@ fn batch_spawn_entities(world: &mut World, n: usize) {
     // is faster.
 }
 
-fn spawn_player(world: &mut World) {
+fn spawn_player(world: &mut World, texture: Texture2D) {
     world.spawn((
         Position { x: 400.0, y: 300.0 },
         Tint(WHITE),
         Player,
+        texture,
     ));
 }
 
@@ -161,18 +165,20 @@ fn system_draw(world: &World) {
             WHITE,
         );
     }
-    for (pos, _) in world.query::<(&Position, &Player)>().iter() {
-        draw_circle(pos.x, pos.y, 14.0, WHITE);
-        draw_text("YOU", pos.x - 12.0, pos.y - 18.0, 16.0, WHITE);
+    for (pos, tex, _) in world.query::<(&Position, &Texture2D, &Player)>().iter() {
+        let w = tex.width();
+        let h = tex.height();
+        draw_texture(tex, pos.x - w / 2.0, pos.y - h / 2.0, WHITE);
     }
 }
 
 #[macroquad::main("Game")]
 async fn main() {
+    let assets = Assets::load().await;
     let mut world = World::new();
 
     batch_spawn_entities(&mut world, 50);
-    spawn_player(&mut world);
+    spawn_player(&mut world, assets.player_ship);
 
     let mut motion_query = PreparedQuery::<(Entity, &mut Position, &Speed)>::default();
     let mut paused = false;

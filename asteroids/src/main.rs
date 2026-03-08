@@ -1,4 +1,4 @@
-#![windows_subsystem = "windows"]
+#![windows_subsystem = "windows"] // Stops console window from showing when running in Windows
 #![cfg_attr(debug_assertions, allow(unused))] // Warn user of unused code during Release builds.
 
 use macroquad::audio::{play_sound, PlaySoundParams};
