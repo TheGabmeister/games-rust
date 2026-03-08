@@ -4,20 +4,17 @@
 use macroquad::prelude::*;
 use hecs::PreparedQuery;
 
-mod assets;
 mod components;
 mod resources;
 mod systems;
 
-use assets::Assets;
 use components::{Position, Velocity, Speed, Lifetime, Enemy};
 use resources::{GameState, Resources, SoundId};
 use systems::*;
 
 #[macroquad::main("Robotron 2084")]
 async fn main() {
-    let assets   = Assets::load().await;
-    let mut res  = Resources::new(assets);
+    let mut res  = Resources::load().await;
     let mut world = hecs::World::new();
 
     // Cached PreparedQuery instances — created once, reused every frame.

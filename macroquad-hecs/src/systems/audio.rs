@@ -9,9 +9,9 @@ pub fn system_audio(res: &mut Resources) {
     let queue: Vec<SoundId> = res.audio_queue.drain(..).collect();
     for id in queue {
         let sound = match id {
-            SoundId::Laser => &res.assets.sfx_laser,
-            SoundId::Bump  => &res.assets.sfx_bump,
-            SoundId::Lose  => &res.assets.sfx_lose,
+            SoundId::Laser => &res.sfx_laser,
+            SoundId::Bump  => &res.sfx_bump,
+            SoundId::Lose  => &res.sfx_lose,
         };
         play_sound(sound, PlaySoundParams { looped: false, volume: 0.7 });
     }

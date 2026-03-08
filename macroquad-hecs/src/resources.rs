@@ -1,8 +1,9 @@
-use macroquad::audio::{play_sound, stop_sound, PlaySoundParams};
-use macroquad::prelude::Texture2D;
+use macroquad::audio::{load_sound, play_sound, stop_sound, PlaySoundParams, Sound};
+use macroquad::prelude::*;
 
-use crate::assets::Assets;
 use crate::components::TextureId;
+
+const ASSETS_DIR: &str = "assets";
 
 // ── Game state machine ────────────────────────────────────────────────────────
 
@@ -31,28 +32,55 @@ pub enum SoundId {
 /// Game-wide singleton state.  Lives outside the ECS world because hecs is
 /// optimised for many same-shaped entities, not per-frame global state.
 pub struct Resources {
-    pub assets:      Assets,
+    // --- loaded assets ---
+    pub player_ship:        Texture2D,
+    pub enemy_black:        Texture2D,
+    pub player_laser:       Texture2D,
+    pub sfx_laser:          Sound,
+    pub sfx_bump:           Sound,
+    pub sfx_lose:           Sound,
+    pub music_spaceshooter: Sound,
+
+    // --- runtime state ---
     pub state:       GameState,
     pub score:       u32,
     pub audio_queue: Vec<SoundId>,
 }
 
 impl Resources {
-    pub fn new(assets: Assets) -> Self {
+    pub async fn load() -> Self {
         Self {
-            assets,
+            player_ship:        Self::load_tex("player_ship.png").await,
+            enemy_black:        Self::load_tex("enemy_black.png").await,
+            player_laser:       Self::load_tex("player_laser.png").await,
+            sfx_laser:          Self::load_snd("sfx_laser1.ogg").await,
+            sfx_bump:           Self::load_snd("sfx_bump.ogg").await,
+            sfx_lose:           Self::load_snd("sfx_lose.ogg").await,
+            music_spaceshooter: Self::load_snd("music_spaceshooter.ogg").await,
             state:       GameState::MainMenu,
             score:       0,
             audio_queue: Vec::new(),
         }
     }
 
+    async fn load_tex(file: &str) -> Texture2D {
+        let path = format!("{}/{}", ASSETS_DIR, file);
+        load_texture(&path).await
+            .unwrap_or_else(|_| panic!("Failed to load texture: {}", path))
+    }
+
+    async fn load_snd(file: &str) -> Sound {
+        let path = format!("{}/{}", ASSETS_DIR, file);
+        load_sound(&path).await
+            .unwrap_or_else(|_| panic!("Failed to load sound: {}", path))
+    }
+
     /// Look up the actual GPU texture from a TextureId.
     pub fn texture(&self, id: TextureId) -> &Texture2D {
         match id {
-            TextureId::PlayerShip  => &self.assets.player_ship,
-            TextureId::EnemyBlack  => &self.assets.enemy_black,
-            TextureId::PlayerLaser => &self.assets.player_laser,
+            TextureId::PlayerShip  => &self.player_ship,
+            TextureId::EnemyBlack  => &self.enemy_black,
+            TextureId::PlayerLaser => &self.player_laser,
         }
     }
 
@@ -62,13 +90,10 @@ impl Resources {
     }
 
     pub fn start_music(&self) {
-        play_sound(
-            &self.assets.music_spaceshooter,
-            PlaySoundParams { looped: true, volume: 0.4 },
-        );
+        play_sound(&self.music_spaceshooter, PlaySoundParams { looped: true, volume: 0.4 });
     }
 
     pub fn stop_music(&self) {
-        stop_sound(&self.assets.music_spaceshooter);
+        stop_sound(&self.music_spaceshooter);
     }
 }
