@@ -22,6 +22,10 @@ struct KillCount(i32);
 
 struct Tint(Color);
 
+struct Player;
+
+const PLAYER_SPEED: f32 = 200.0;
+
 fn manhattan_dist(x0: f32, x1: f32, y0: f32, y1: f32) -> i32 {
     let dx = (x0 - x1).abs();
     let dy = (y0 - y1).abs();
@@ -50,6 +54,24 @@ fn batch_spawn_entities(world: &mut World, n: usize) {
     world.spawn_batch(to_spawn);
     // We could instead call `world.spawn((pos, s, hp, dmg, kc))` for each entity, but `spawn_batch`
     // is faster.
+}
+
+fn spawn_player(world: &mut World) {
+    world.spawn((
+        Position { x: 400.0, y: 300.0 },
+        Tint(WHITE),
+        Player,
+    ));
+}
+
+fn system_player_input(world: &mut World) {
+    let dt = get_frame_time();
+    for (pos, _) in &mut world.query::<(&mut Position, &Player)>() {
+        if is_key_down(KeyCode::Right) || is_key_down(KeyCode::D) { pos.x += PLAYER_SPEED * dt; }
+        if is_key_down(KeyCode::Left)  || is_key_down(KeyCode::A) { pos.x -= PLAYER_SPEED * dt; }
+        if is_key_down(KeyCode::Down)  || is_key_down(KeyCode::S) { pos.y += PLAYER_SPEED * dt; }
+        if is_key_down(KeyCode::Up)    || is_key_down(KeyCode::W) { pos.y -= PLAYER_SPEED * dt; }
+    }
 }
 
 fn system_integrate_motion(
@@ -139,6 +161,10 @@ fn system_draw(world: &World) {
             WHITE,
         );
     }
+    for (pos, _) in world.query::<(&Position, &Player)>().iter() {
+        draw_circle(pos.x, pos.y, 14.0, WHITE);
+        draw_text("YOU", pos.x - 12.0, pos.y - 18.0, 16.0, WHITE);
+    }
 }
 
 #[macroquad::main("Game")]
@@ -146,6 +172,7 @@ async fn main() {
     let mut world = World::new();
 
     batch_spawn_entities(&mut world, 50);
+    spawn_player(&mut world);
 
     let mut motion_query = PreparedQuery::<(Entity, &mut Position, &Speed)>::default();
     let mut paused = false;
@@ -163,6 +190,7 @@ async fn main() {
             system_integrate_motion(&mut world, &mut motion_query);
             system_fire_at_closest(&mut world);
             system_remove_dead(&mut world);
+            system_player_input(&mut world);
         }
 
         // Draw
