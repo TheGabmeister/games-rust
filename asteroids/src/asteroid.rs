@@ -1,18 +1,18 @@
 use macroquad::prelude::*;
 use macroquad::rand::gen_range;
 
-use crate::box_collider::{BoxCollider, Obb};
-use crate::collidable::Collidable;
+use crate::circle_collider::CircleCollider;
+use crate::collidable::{Collider, Collidable};
 use crate::sprite::Sprite;
 use crate::transform::Transform;
 
 pub struct Asteroid {
-    pub transform: Transform,
-    pub alive:     bool,
-    sprite:        Sprite,
-    box_collider:  BoxCollider,
-    vx:            f32,
-    vy:            f32,
+    pub transform:    Transform,
+    pub alive:        bool,
+    sprite:           Sprite,
+    circle_collider:  CircleCollider,
+    vx:               f32,
+    vy:               f32,
 }
 
 impl Asteroid {
@@ -20,12 +20,12 @@ impl Asteroid {
         let angle = gen_range(0.0f32, std::f32::consts::TAU);
         let speed = gen_range(60.0f32, 140.0);
         Self {
-            transform:    Transform::new(x, y),
-            alive:        true,
-            sprite:       Sprite::new(texture),
-            box_collider: BoxCollider::default(),
-            vx:           angle.cos() * speed,
-            vy:           angle.sin() * speed,
+            transform:       Transform::new(x, y),
+            alive:           true,
+            sprite:          Sprite::new(texture),
+            circle_collider: CircleCollider::default(),
+            vx:              angle.cos() * speed,
+            vy:              angle.sin() * speed,
         }
     }
 
@@ -40,15 +40,14 @@ impl Asteroid {
     pub fn draw(&self) {
         self.sprite.draw(&self.transform);
     }
-
 }
 
 impl Collidable for Asteroid {
-    fn collider(&self) -> Obb {
-        self.box_collider.obb(
+    fn collider(&self) -> Collider {
+        Collider::Circle(self.circle_collider.circle(
             &self.transform,
             self.sprite.texture.width(),
             self.sprite.texture.height(),
-        )
+        ))
     }
 }

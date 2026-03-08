@@ -1,7 +1,7 @@
 use macroquad::prelude::*;
 
-use crate::box_collider::{BoxCollider, Obb};
-use crate::collidable::Collidable;
+use crate::box_collider::BoxCollider;
+use crate::collidable::{Collider, Collidable};
 use crate::sprite::Sprite;
 use crate::transform::Transform;
 
@@ -41,11 +41,11 @@ impl Enemy {
 }
 
 impl Collidable for Enemy {
-    fn collider(&self) -> Obb {
-        self.box_collider.obb(
+    fn collider(&self) -> Collider {
+        Collider::Obb(self.box_collider.obb(
             &self.transform,
             self.sprite.texture.width(),
             self.sprite.texture.height(),
-        )
+        ))
     }
 }
