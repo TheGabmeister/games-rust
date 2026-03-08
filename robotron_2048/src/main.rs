@@ -33,8 +33,8 @@ impl SimulationCaches {
             lifetime_query: PreparedQuery::default(),
             commands: CommandBuffer::new(),
             accumulator: 0.0,
-            combat: CombatScratch::new(),
-            render: RenderScratch::new(),
+            combat: CombatScratch::default(),
+            render: RenderScratch::default(),
             rng: ::rand::rng(),
         }
     }
