@@ -43,8 +43,9 @@ impl Player {
             self.vy -= self.transform.rot.cos() * THRUST * dt;
         }
         if input.move_down {
-            self.vx *= 1.0 - BRAKE * dt;
-            self.vy *= 1.0 - BRAKE * dt;
+            let damping = (1.0 - BRAKE * dt).clamp(0.0, 1.0);
+            self.vx *= damping;
+            self.vy *= damping;
         }
 
         let speed = (self.vx * self.vx + self.vy * self.vy).sqrt();

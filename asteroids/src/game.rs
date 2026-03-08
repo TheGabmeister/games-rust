@@ -10,6 +10,8 @@ use crate::laser::Laser;
 use crate::pickup::Pickup;
 use crate::player::Player;
 
+const MAX_FRAME_DT: f32 = 1.0 / 30.0;
+
 pub struct Game {
     player:        Player,
     enemy:         Enemy,
@@ -55,6 +57,8 @@ impl Game {
     }
 
     pub fn update(&mut self, dt: f32, input: &InputState) {
+        let dt = dt.clamp(0.0, MAX_FRAME_DT);
+
         if input.quit {
             self.should_quit = true;
         }
@@ -79,16 +83,21 @@ impl Game {
             }
         }
 
-        if self.enemy.alive {
-            if self.enemy.update(dt) {
-                self.enemy_lasers.push(Laser::new(
-                    self.enemy.transform.x, self.enemy.transform.y,
-                    0.0, 500.0,
-                    self.enemy_laser_texture.clone(),
-                ));
-                play_sound(&self.sfx_laser, PlaySoundParams { looped: false, volume: 1.0 });
-            }
+        if self.enemy.alive && self.enemy.update(dt) {
+            self.enemy_lasers.push(Laser::new(
+                self.enemy.transform.x, self.enemy.transform.y,
+                0.0, 500.0,
+                self.enemy_laser_texture.clone(),
+            ));
+            play_sound(&self.sfx_laser, PlaySoundParams { looped: false, volume: 1.0 });
+        }
 
+        for asteroid in &mut self.asteroids { asteroid.update(dt); }
+        for laser in &mut self.player_lasers { laser.update(dt); }
+        for laser in &mut self.enemy_lasers  { laser.update(dt); }
+
+        // Enemy vs player laser
+        if self.enemy.alive {
             for laser in &mut self.player_lasers {
                 if laser.alive && overlaps(laser, &self.enemy) {
                     laser.alive = false;
@@ -108,7 +117,6 @@ impl Game {
                 }
             }
         }
-        self.asteroids.retain(|a| a.alive);
 
         // Player death collisions
         let mut player_killed = false;
@@ -121,7 +129,7 @@ impl Game {
             }
 
             for asteroid in &self.asteroids {
-                if overlaps(&self.player, asteroid) {
+                if asteroid.alive && overlaps(&self.player, asteroid) {
                     player_killed = true;
                     break;
                 }
@@ -155,9 +163,7 @@ impl Game {
             }
         }
 
-        for asteroid in &mut self.asteroids { asteroid.update(dt); }
-        for laser in &mut self.player_lasers { laser.update(dt); }
-        for laser in &mut self.enemy_lasers  { laser.update(dt); }
+        self.asteroids.retain(|a| a.alive);
         self.player_lasers.retain(|l| l.alive);
         self.enemy_lasers.retain(|l| l.alive);
     }
