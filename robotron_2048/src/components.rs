@@ -103,7 +103,7 @@ pub enum EnemyKind {
     Tank,
     Prog,
 }
-pub struct Invulnerable(pub bool);
+pub struct Invulnerable;
 
 // --- Relationships ---
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

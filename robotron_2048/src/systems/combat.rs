@@ -137,7 +137,7 @@ pub fn system_projectile_collision(
                 cmd.despawn(proj.entity);
                 hit_count += 1;
 
-                let is_invulnerable = invulnerable.is_some_and(|v| v.0);
+                let is_invulnerable = invulnerable.is_some();
                 if is_invulnerable {
                     if let Some(hit_reaction) = hit_reaction {
                         if let Some(hit_slow) = maybe_hit_slow {

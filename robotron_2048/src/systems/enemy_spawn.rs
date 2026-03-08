@@ -89,7 +89,7 @@ pub fn spawn_enemy(world: &mut World, kind: EnemyKind, pos: Vec2) {
     });
 
     if profile.invulnerable {
-        entity.add(Invulnerable(true));
+        entity.add(Invulnerable);
     }
     if let Some(chase) = profile.chase {
         entity.add(chase);
