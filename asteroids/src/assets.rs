@@ -6,6 +6,7 @@ const ASSETS_DIR: &str = "assets";
 pub struct Assets {
     pub player_ship:        Texture2D,
     pub player_laser:       Texture2D,
+    pub enemy_laser:        Texture2D,
     pub enemy_ufo_green:    Texture2D,
     pub pill_blue:          Texture2D,
     pub sfx_laser:          Sound,
@@ -18,6 +19,7 @@ impl Assets {
         Self {
             player_ship:        Self::texture("player_ship.png").await,
             player_laser:       Self::texture("player_laser.png").await,
+            enemy_laser:        Self::texture("enemy_laser.png").await,
             enemy_ufo_green:    Self::texture("enemy_ufo_green.png").await,
             pill_blue:          Self::texture("pill_blue.png").await,
             sfx_laser:          Self::sound("sfx_laser1.ogg").await,

@@ -14,7 +14,8 @@ pub struct Game {
     pickup:        Pickup,
     player_lasers: Vec<Laser>,
     enemy_lasers:  Vec<Laser>,
-    laser_texture: Texture2D,
+    laser_texture:       Texture2D,
+    enemy_laser_texture: Texture2D,
     sfx_laser:     Sound,
     pub should_quit: bool,
 }
@@ -27,7 +28,8 @@ impl Game {
             pickup:        Pickup::new(600.0, 450.0, assets.pill_blue.clone()),
             player_lasers: Vec::new(),
             enemy_lasers:  Vec::new(),
-            laser_texture: assets.player_laser.clone(),
+            laser_texture:       assets.player_laser.clone(),
+            enemy_laser_texture: assets.enemy_laser.clone(),
             sfx_laser:     assets.sfx_laser.clone(),
             should_quit:   false,
         }
@@ -52,7 +54,7 @@ impl Game {
         if self.enemy.alive {
             if self.enemy.update(dt) {
                 self.enemy_lasers.push(Laser::new(
-                    self.enemy.x, self.enemy.y, 500.0, self.laser_texture.clone(),
+                    self.enemy.x, self.enemy.y, 500.0, self.enemy_laser_texture.clone(),
                 ));
                 play_sound(&self.sfx_laser, PlaySoundParams { looped: false, volume: 1.0 });
             }
