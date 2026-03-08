@@ -9,7 +9,7 @@ mod components;
 mod resources;
 mod systems;
 
-use components::{Enemy, Lifetime, Position, Speed, Velocity};
+use components::{Enemy, Lifetime, Position, Velocity};
 use resources::{GameState, Resources, SoundId};
 use systems::*;
 
@@ -19,7 +19,6 @@ async fn main() {
     let mut world = hecs::World::new();
 
     // Cached PreparedQuery instances: created once, reused every frame.
-    let mut wander_query = PreparedQuery::<(&mut Velocity, &Speed)>::default();
     let mut integrate_query = PreparedQuery::<(&mut Position, &Velocity)>::default();
     let mut lifetime_query = PreparedQuery::<&mut Lifetime>::default();
 
@@ -54,7 +53,6 @@ async fn main() {
                 // --- update ---
                 system_player_move(&mut world, input);
                 system_player_shoot(&mut world, input, &mut res);
-                system_wander_velocity(&mut world, &mut wander_query);
                 system_integrate_velocity(&mut world, &mut integrate_query);
                 system_projectile_collision(&world, &mut commands, &mut res);
                 system_tick_lifetime(&mut world, &mut lifetime_query);
