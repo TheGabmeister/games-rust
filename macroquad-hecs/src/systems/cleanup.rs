@@ -1,5 +1,5 @@
-use macroquad::prelude::get_frame_time;
 use hecs::*;
+use macroquad::prelude::get_frame_time;
 
 use crate::components::*;
 
@@ -11,15 +11,13 @@ pub fn system_tick_lifetime(world: &mut World, query: &mut PreparedQuery<&mut Li
     }
 }
 
-/// Despawn entities whose Lifetime has expired.
-pub fn system_remove_expired(world: &mut World) {
-    let to_remove: Vec<Entity> = world
+/// Queue despawn for entities whose Lifetime has expired.
+pub fn system_remove_expired(world: &World, cmd: &mut CommandBuffer) {
+    for (e, _) in world
         .query::<(Entity, &Lifetime)>()
         .iter()
         .filter(|(_, lt)| lt.0 <= 0.0)
-        .map(|(e, _)| e)
-        .collect();
-    for e in to_remove {
-        let _ = world.despawn(e);
+    {
+        cmd.despawn(e);
     }
 }
