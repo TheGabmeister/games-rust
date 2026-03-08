@@ -20,6 +20,7 @@ pub struct Game {
     laser_texture:       Texture2D,
     enemy_laser_texture: Texture2D,
     sfx_laser:     Sound,
+    sfx_bump:      Sound,
     pub should_quit: bool,
     score:         u32,
 }
@@ -41,6 +42,7 @@ impl Game {
             laser_texture:       assets.player_laser.clone(),
             enemy_laser_texture: assets.enemy_laser.clone(),
             sfx_laser:     assets.sfx_laser.clone(),
+            sfx_bump:      assets.sfx_bump.clone(),
             should_quit:   false,
             score:         0,
         }
@@ -98,6 +100,7 @@ impl Game {
                     laser.alive = false;
                     asteroid.alive = false;
                     self.score += 100;
+                    play_sound(&self.sfx_bump, PlaySoundParams { looped: false, volume: 1.0 });
                 }
             }
         }

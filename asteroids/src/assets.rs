@@ -11,6 +11,7 @@ pub struct Assets {
     pub pill_blue:          Texture2D,
     pub asteroid_big:       Texture2D,
     pub sfx_laser:          Sound,
+    pub sfx_bump:           Sound,
     pub sfx_lose:           Sound,
     pub music_spaceshooter: Sound,
 }
@@ -25,6 +26,7 @@ impl Assets {
             pill_blue:          Self::texture("pill_blue.png").await,
             asteroid_big:       Self::texture("asteroid_big.png").await,
             sfx_laser:          Self::sound("sfx_laser1.ogg").await,
+            sfx_bump:           Self::sound("sfx_bump.ogg").await,
             sfx_lose:           Self::sound("sfx_lose.ogg").await,
             music_spaceshooter: Self::sound("music_spaceshooter.ogg").await,
         }
