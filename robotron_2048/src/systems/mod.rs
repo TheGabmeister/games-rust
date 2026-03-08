@@ -8,7 +8,7 @@ mod enemy_spawn;
 mod input;
 mod movement;
 mod render;
-mod spawning;
+mod spawn_player;
 
 pub use audio::*;
 pub use cleanup::*;
@@ -20,4 +20,4 @@ pub use enemy_spawn::*;
 pub use input::*;
 pub use movement::*;
 pub use render::*;
-pub use spawning::*;
+pub use spawn_player::*;
