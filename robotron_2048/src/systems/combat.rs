@@ -15,6 +15,7 @@ struct ProjectileSnapshot {
 }
 
 /// Per-step scratch buffers for collision resolution — allocated once and reused.
+#[derive(Default)]
 pub struct CombatScratch {
     player_projectiles: Vec<ProjectileSnapshot>,
     spark_projectiles: Vec<ProjectileSnapshot>,
@@ -205,9 +206,14 @@ pub fn system_player_contact_damage(world: &World) -> bool {
 
 fn enemy_score(kind: EnemyKind) -> u32 {
     match kind {
+        EnemyKind::Grunt => 100,
+        EnemyKind::Hulk => 0, // unkillable
+        EnemyKind::Brain => 500,
         EnemyKind::Sphereoid => 1000,
         EnemyKind::Enforcer => 150,
-        _ => 1,
+        EnemyKind::Quark => 500,
+        EnemyKind::Tank => 200,
+        EnemyKind::Prog => 100,
     }
 }
 

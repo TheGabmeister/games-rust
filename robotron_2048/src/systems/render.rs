@@ -5,6 +5,7 @@ use crate::components::*;
 use crate::resources::Resources;
 
 /// Per-frame scratch buffer for the draw pass — allocated once and reused.
+#[derive(Default)]
 pub struct RenderScratch {
     drawables: Vec<(u8, Vec2, TextureId, Color)>,
 }

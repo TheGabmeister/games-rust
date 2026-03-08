@@ -80,7 +80,9 @@ pub fn spawn_enemy(world: &mut World, kind: EnemyKind, pos: Vec2) {
     entity.add(Position(clamped_pos));
     entity.add(Velocity(Vec2::ZERO));
     entity.add(Speed(profile.speed));
-    entity.add(Health(profile.health));
+    if let Some(h) = profile.health {
+        entity.add(Health(h));
+    }
     entity.add(kind);
     entity.add(Sprite {
         texture: TextureId::EnemyBlack,
@@ -177,7 +179,7 @@ pub fn system_enemy_spawn(world: &mut World, rng: &mut ::rand::rngs::ThreadRng, 
 }
 
 /// Tick embryo growth and replace matured embryos with their final enemy form.
-pub fn system_enemy_maturation(world: &mut World, dt: f32) {
+pub fn system_enemy_maturation(world: &mut World, cmd: &mut hecs::CommandBuffer, dt: f32) {
     let mut mature_events: Vec<(hecs::Entity, EnemyKind, Vec2)> = Vec::new();
 
     for (entity, pos, growth) in &mut world.query::<(hecs::Entity, &Position, &mut Growth)>() {
@@ -188,7 +190,7 @@ pub fn system_enemy_maturation(world: &mut World, dt: f32) {
     }
 
     for (entity, target_kind, pos) in mature_events {
-        let _ = world.despawn(entity);
+        cmd.despawn(entity);
         spawn_enemy(world, target_kind, pos);
     }
 }
@@ -196,7 +198,7 @@ pub fn system_enemy_maturation(world: &mut World, dt: f32) {
 #[derive(Clone, Copy)]
 struct EnemyProfile {
     speed: f32,
-    health: i32,
+    health: Option<i32>,
     radius: f32,
     invulnerable: bool,
     uses_hit_slow: bool,
@@ -212,7 +214,7 @@ fn enemy_profile(kind: EnemyKind) -> EnemyProfile {
     match kind {
         EnemyKind::Grunt => EnemyProfile {
             speed: 140.0,
-            health: 1,
+            health: Some(1),
             radius: 16.0,
             invulnerable: false,
             uses_hit_slow: false,
@@ -233,7 +235,7 @@ fn enemy_profile(kind: EnemyKind) -> EnemyProfile {
         },
         EnemyKind::Hulk => EnemyProfile {
             speed: 80.0,
-            health: 4,
+            health: None,
             radius: 20.0,
             invulnerable: true,
             uses_hit_slow: true,
@@ -257,7 +259,7 @@ fn enemy_profile(kind: EnemyKind) -> EnemyProfile {
         },
         EnemyKind::Brain => EnemyProfile {
             speed: 120.0,
-            health: 1,
+            health: Some(1),
             radius: 16.0,
             invulnerable: false,
             uses_hit_slow: false,
@@ -278,7 +280,7 @@ fn enemy_profile(kind: EnemyKind) -> EnemyProfile {
         },
         EnemyKind::Sphereoid => EnemyProfile {
             speed: 30.0,
-            health: 2,
+            health: Some(2),
             radius: 22.0,
             invulnerable: false,
             uses_hit_slow: false,
@@ -298,7 +300,7 @@ fn enemy_profile(kind: EnemyKind) -> EnemyProfile {
         },
         EnemyKind::Enforcer => EnemyProfile {
             speed: 110.0,
-            health: 1,
+            health: Some(1),
             radius: 16.0,
             invulnerable: false,
             uses_hit_slow: false,
@@ -330,7 +332,7 @@ fn enemy_profile(kind: EnemyKind) -> EnemyProfile {
         },
         EnemyKind::Quark => EnemyProfile {
             speed: 25.0,
-            health: 3,
+            health: Some(3),
             radius: 22.0,
             invulnerable: false,
             uses_hit_slow: false,
@@ -350,7 +352,7 @@ fn enemy_profile(kind: EnemyKind) -> EnemyProfile {
         },
         EnemyKind::Tank => EnemyProfile {
             speed: 70.0,
-            health: 2,
+            health: Some(2),
             radius: 18.0,
             invulnerable: false,
             uses_hit_slow: false,
@@ -382,7 +384,7 @@ fn enemy_profile(kind: EnemyKind) -> EnemyProfile {
         },
         EnemyKind::Prog => EnemyProfile {
             speed: 180.0,
-            health: 1,
+            health: Some(1),
             radius: 14.0,
             invulnerable: false,
             uses_hit_slow: false,
