@@ -135,6 +135,15 @@ impl WaveDirector {
             spawn_pending: true,
         }
     }
+}
+
+impl Default for WaveDirector {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl WaveDirector {
 
     pub fn reset(&mut self) {
         self.current_wave = 0;

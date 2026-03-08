@@ -5,7 +5,7 @@ use macroquad::prelude::*;
 use crate::components::*;
 
 /// Enemy attack dispatch point based on RangedAttack capability.
-pub fn system_enemy_attack(world: &mut World, dt: f32) {
+pub fn system_enemy_attack(world: &mut World, rng: &mut ::rand::rngs::ThreadRng, dt: f32) {
     let player_pos = world
         .query::<With<&Position, &Player>>()
         .iter()
@@ -27,7 +27,6 @@ pub fn system_enemy_attack(world: &mut World, dt: f32) {
         attack.remaining = attack.period;
     }
 
-    let mut rng = ::rand::rng();
     for (owner, origin, attack) in fire_events {
         let to_player = player_pos - origin;
         let base = to_player.normalize_or_zero();

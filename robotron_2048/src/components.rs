@@ -19,6 +19,10 @@ pub struct Chase {
     pub strafe_weight: f32,
     pub jitter_weight: f32,
     pub hit_slow_multiplier: f32,
+    /// Persisted strafe direction: -1.0 or 1.0. Randomized on first step and every strafe_timer expiry.
+    pub strafe_sign: f32,
+    /// Seconds until the next strafe direction re-roll.
+    pub strafe_timer: f32,
 }
 
 #[derive(Clone, Copy)]

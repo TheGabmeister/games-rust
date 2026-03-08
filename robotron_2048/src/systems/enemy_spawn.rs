@@ -141,8 +141,7 @@ fn spawn_embryo(world: &mut World, target_kind: EnemyKind, pos: Vec2, mature_tim
 }
 
 /// Tick spawner components and emit child enemies for entities that can spawn.
-pub fn system_enemy_spawn(world: &mut World, dt: f32) {
-    let mut rng = ::rand::rng();
+pub fn system_enemy_spawn(world: &mut World, rng: &mut ::rand::rngs::ThreadRng, dt: f32) {
     let mut spawn_events: Vec<(EnemyKind, Vec2, f32)> = Vec::new();
 
     for (pos, spawner) in &mut world.query::<(&Position, &mut Spawner)>() {
@@ -221,6 +220,8 @@ fn enemy_profile(kind: EnemyKind) -> EnemyProfile {
                 strafe_weight: 0.0,
                 jitter_weight: 0.0,
                 hit_slow_multiplier: 1.0,
+                strafe_sign: 0.0,
+                strafe_timer: 0.0,
             }),
             ranged_attack: None,
             spawner: None,
@@ -240,6 +241,8 @@ fn enemy_profile(kind: EnemyKind) -> EnemyProfile {
                 strafe_weight: 0.0,
                 jitter_weight: 0.0,
                 hit_slow_multiplier: 0.35,
+                strafe_sign: 0.0,
+                strafe_timer: 0.0,
             }),
             ranged_attack: None,
             spawner: None,
@@ -262,6 +265,8 @@ fn enemy_profile(kind: EnemyKind) -> EnemyProfile {
                 strafe_weight: 0.0,
                 jitter_weight: 0.15,
                 hit_slow_multiplier: 1.0,
+                strafe_sign: 0.0,
+                strafe_timer: 0.0,
             }),
             ranged_attack: None,
             spawner: None,
@@ -301,6 +306,8 @@ fn enemy_profile(kind: EnemyKind) -> EnemyProfile {
                 strafe_weight: 0.85,
                 jitter_weight: 0.55,
                 hit_slow_multiplier: 1.0,
+                strafe_sign: 0.0,
+                strafe_timer: 0.0,
             }),
             ranged_attack: Some(RangedAttack {
                 remaining: 1.5,
@@ -351,6 +358,8 @@ fn enemy_profile(kind: EnemyKind) -> EnemyProfile {
                 strafe_weight: 0.0,
                 jitter_weight: 0.1,
                 hit_slow_multiplier: 1.0,
+                strafe_sign: 0.0,
+                strafe_timer: 0.0,
             }),
             ranged_attack: Some(RangedAttack {
                 remaining: 2.0,
@@ -381,6 +390,8 @@ fn enemy_profile(kind: EnemyKind) -> EnemyProfile {
                 strafe_weight: 0.0,
                 jitter_weight: 0.15,
                 hit_slow_multiplier: 1.0,
+                strafe_sign: 0.0,
+                strafe_timer: 0.0,
             }),
             ranged_attack: None,
             spawner: None,

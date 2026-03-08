@@ -23,6 +23,7 @@ struct SimulationCaches {
     accumulator: f32,
     combat: CombatScratch,
     render: RenderScratch,
+    rng: ::rand::rngs::ThreadRng,
 }
 
 impl SimulationCaches {
@@ -34,6 +35,7 @@ impl SimulationCaches {
             accumulator: 0.0,
             combat: CombatScratch::new(),
             render: RenderScratch::new(),
+            rng: ::rand::rng(),
         }
     }
 
@@ -128,9 +130,9 @@ fn update_playing_step(
     }
 
     system_wave_director(world, &mut res.wave_director);
-    system_enemy_ai(world, dt);
-    system_enemy_attack(world, dt);
-    system_enemy_spawn(world, dt);
+    system_enemy_ai(world, &mut sim.rng, dt);
+    system_enemy_attack(world, &mut sim.rng, dt);
+    system_enemy_spawn(world, &mut sim.rng, dt);
     system_enemy_maturation(world, dt);
     system_player_move(world, input);
     system_player_shoot(world, input, res);
@@ -174,18 +176,22 @@ fn update_game_over(res: &mut Resources, input: InputState) {
     }
 }
 
+fn centered_x(text: &str, font_size: u16) -> f32 {
+    screen_width() / 2.0 - measure_text(text, None, font_size, 1.0).width / 2.0
+}
+
 fn draw_main_menu() {
-    let cx = screen_width() / 2.0;
     let cy = screen_height() / 2.0;
-    draw_text("ROBOTRON 2084", cx - 150.0, cy - 50.0, 52.0, WHITE);
-    draw_text("Press [Enter] to start", cx - 130.0, cy + 8.0, 26.0, GRAY);
+    draw_text("ROBOTRON 2084", centered_x("ROBOTRON 2084", 52), cy - 50.0, 52.0, WHITE);
     draw_text(
-        "[WASD] move  [LMB] shoot  [F1] debug",
-        cx - 190.0,
-        cy + 40.0,
-        20.0,
-        DARKGRAY,
+        "Press [Enter] to start",
+        centered_x("Press [Enter] to start", 26),
+        cy + 8.0,
+        26.0,
+        GRAY,
     );
+    let hint = "[WASD] move  [LMB] shoot  [F1] debug";
+    draw_text(hint, centered_x(hint, 20), cy + 40.0, 20.0, DARKGRAY);
 }
 
 fn draw_playing(world: &World, res: &Resources, render: &mut RenderScratch) {
@@ -223,14 +229,9 @@ fn draw_paused(world: &World, res: &Resources, render: &mut RenderScratch) {
 
     let cx = screen_width() / 2.0;
     let cy = screen_height() / 2.0;
-    draw_text("PAUSED", cx - 80.0, cy - 30.0, 52.0, YELLOW);
-    draw_text(
-        "[Space] resume  [Esc] menu",
-        cx - 140.0,
-        cy + 22.0,
-        22.0,
-        GRAY,
-    );
+    draw_text("PAUSED", centered_x("PAUSED", 52), cy - 30.0, 52.0, YELLOW);
+    let hint = "[Space] resume  [Esc] menu";
+    draw_text(hint, centered_x(hint, 22), cy + 22.0, 22.0, GRAY);
     if res.debug_enabled {
         system_draw_colliders(world);
         draw_text("DEBUG COLLIDERS [F1]", 10.0, 20.0, 16.0, LIME);
@@ -245,13 +246,8 @@ fn draw_game_over(res: &Resources) {
     } else {
         ("RUN COMPLETE", GREEN)
     };
-    draw_text(headline, cx - 195.0, cy - 40.0, 38.0, color);
-    draw_text(
-        &format!("Score: {}", res.score),
-        cx - 60.0,
-        cy + 10.0,
-        30.0,
-        WHITE,
-    );
-    draw_text("[Enter] main menu", cx - 110.0, cy + 52.0, 22.0, GRAY);
+    draw_text(headline, centered_x(headline, 38), cy - 40.0, 38.0, color);
+    let score_str = format!("Score: {}", res.score);
+    draw_text(&score_str, centered_x(&score_str, 30), cy + 10.0, 30.0, WHITE);
+    draw_text("[Enter] main menu", centered_x("[Enter] main menu", 22), cy + 52.0, 22.0, GRAY);
 }

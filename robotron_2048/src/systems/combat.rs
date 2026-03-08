@@ -162,7 +162,7 @@ pub fn system_projectile_collision(
 
     // Credit score for kills plus spark interceptions.
     res.score += kill_score + spark_score;
-    for _ in 0..hit_count {
+    if hit_count > 0 {
         res.queue_sound(SoundId::Bump);
     }
 }

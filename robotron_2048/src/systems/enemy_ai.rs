@@ -5,8 +5,7 @@ use macroquad::prelude::Vec2;
 use crate::components::*;
 
 /// Enemy AI dispatch point based on capability components.
-pub fn system_enemy_ai(world: &mut World, dt: f32) {
-    let mut rng = ::rand::rng();
+pub fn system_enemy_ai(world: &mut World, rng: &mut ::rand::rngs::ThreadRng, dt: f32) {
     let player_pos = world
         .query::<With<&Position, &Player>>()
         .iter()
@@ -21,7 +20,7 @@ pub fn system_enemy_ai(world: &mut World, dt: f32) {
         &mut Velocity,
         &Position,
         &Speed,
-        &Chase,
+        &mut Chase,
         Option<&mut HitSlow>,
     )>() {
         let mut speed_scale = 1.0;
@@ -34,15 +33,24 @@ pub fn system_enemy_ai(world: &mut World, dt: f32) {
 
         let to_player = player_pos - pos.0;
         let forward = to_player.normalize_or_zero();
+
+        // Strafe direction is held for a random interval (0.4–0.9 s) then flipped,
+        // producing real strafing arcs instead of per-step jitter.
         let strafe_sign = if chase.strafe_weight > 0.0 {
-            if rng.random_range(0.0..1.0) < 0.5 {
-                -1.0
-            } else {
-                1.0
+            chase.strafe_timer -= dt;
+            if chase.strafe_timer <= 0.0 {
+                chase.strafe_sign = if rng.random_range(0.0..1.0_f32) < 0.5 {
+                    -1.0
+                } else {
+                    1.0
+                };
+                chase.strafe_timer = rng.random_range(0.4_f32..0.9_f32);
             }
+            chase.strafe_sign
         } else {
             0.0
         };
+
         let strafe = Vec2::new(-forward.y, forward.x) * strafe_sign;
         let jitter = if chase.jitter_weight > 0.0 {
             Vec2::new(rng.random_range(-1.0..1.0), rng.random_range(-1.0..1.0)).normalize_or_zero()
