@@ -25,7 +25,7 @@ pub fn system_capture_input(input: &mut InputState) {
     }
 
     let (mx, my) = mouse_position();
-    input.move_axis = move_axis;
+    input.move_axis = move_axis.normalize_or_zero();
     input.aim_screen = vec2(mx, my);
     input.shoot_pressed = is_mouse_button_pressed(MouseButton::Left);
     input.confirm_pressed = is_key_pressed(KeyCode::Enter);
