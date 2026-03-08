@@ -43,14 +43,6 @@ impl Laser {
         self.sprite.draw(&self.transform);
     }
 
-    pub fn draw_collider_debug(&self, color: Color) {
-        self.box_collider.draw_debug(
-            &self.transform,
-            self.sprite.texture.width(),
-            self.sprite.texture.height(),
-            color,
-        );
-    }
 }
 
 impl Collidable for Laser {
