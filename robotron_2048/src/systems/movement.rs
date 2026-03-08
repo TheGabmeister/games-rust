@@ -1,5 +1,4 @@
 use hecs::*;
-use macroquad::prelude::get_frame_time;
 
 use crate::components::*;
 
@@ -7,8 +6,8 @@ use crate::components::*;
 pub fn system_integrate_velocity(
     world: &mut World,
     query: &mut PreparedQuery<(&mut Position, &Velocity)>,
+    dt: f32,
 ) {
-    let dt = get_frame_time();
     for (pos, vel) in query.query_mut(world) {
         pos.0 += vel.0 * dt;
     }

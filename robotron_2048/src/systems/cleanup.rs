@@ -1,11 +1,9 @@
 use hecs::*;
-use macroquad::prelude::get_frame_time;
 
 use crate::components::*;
 
 /// Tick down Lifetime for every entity that has one (projectiles).
-pub fn system_tick_lifetime(world: &mut World, query: &mut PreparedQuery<&mut Lifetime>) {
-    let dt = get_frame_time();
+pub fn system_tick_lifetime(world: &mut World, query: &mut PreparedQuery<&mut Lifetime>, dt: f32) {
     for lt in query.query_mut(world) {
         lt.0 -= dt;
     }

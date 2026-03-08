@@ -1,7 +1,7 @@
-use macroquad::audio::{load_sound, Sound};
+use macroquad::audio::{Sound, load_sound};
 use macroquad::prelude::*;
 
-use crate::components::TextureId;
+use crate::components::{EnemyKind, TextureId};
 
 const ASSETS_DIR: &str = "assets";
 
@@ -34,6 +34,129 @@ pub struct InputState {
     pub debug_toggle_pressed: bool,
 }
 
+impl InputState {
+    /// Keep continuous controls but clear one-frame button edges for
+    /// additional fixed-timestep simulation steps in the same render frame.
+    pub fn fixed_step_continuation(self) -> Self {
+        Self {
+            shoot_pressed: false,
+            confirm_pressed: false,
+            cancel_pressed: false,
+            resume_pressed: false,
+            debug_toggle_pressed: false,
+            ..self
+        }
+    }
+}
+
+#[derive(Clone, Copy)]
+pub struct WaveSpawnSpec {
+    pub kind: EnemyKind,
+    pub count: usize,
+}
+
+#[derive(Clone, Copy)]
+pub struct WaveDefinition {
+    pub entries: &'static [WaveSpawnSpec],
+}
+
+const WAVE_1: [WaveSpawnSpec; 1] = [WaveSpawnSpec {
+    kind: EnemyKind::Grunt,
+    count: 2,
+}];
+const WAVE_2: [WaveSpawnSpec; 2] = [
+    WaveSpawnSpec {
+        kind: EnemyKind::Grunt,
+        count: 2,
+    },
+    WaveSpawnSpec {
+        kind: EnemyKind::Enforcer,
+        count: 2,
+    },
+];
+const WAVE_3: [WaveSpawnSpec; 3] = [
+    WaveSpawnSpec {
+        kind: EnemyKind::Grunt,
+        count: 2,
+    },
+    WaveSpawnSpec {
+        kind: EnemyKind::Hulk,
+        count: 2,
+    },
+    WaveSpawnSpec {
+        kind: EnemyKind::Enforcer,
+        count: 3,
+    },
+];
+const WAVE_4: [WaveSpawnSpec; 3] = [
+    WaveSpawnSpec {
+        kind: EnemyKind::Grunt,
+        count: 2,
+    },
+    WaveSpawnSpec {
+        kind: EnemyKind::Hulk,
+        count: 3,
+    },
+    WaveSpawnSpec {
+        kind: EnemyKind::Enforcer,
+        count: 4,
+    },
+];
+
+pub const WAVE_DEFINITIONS: [WaveDefinition; 4] = [
+    WaveDefinition { entries: &WAVE_1 },
+    WaveDefinition { entries: &WAVE_2 },
+    WaveDefinition { entries: &WAVE_3 },
+    WaveDefinition { entries: &WAVE_4 },
+];
+
+pub struct WaveSpawnRequest {
+    pub difficulty_cycle: usize,
+    pub definition: &'static WaveDefinition,
+}
+
+pub struct WaveDirector {
+    current_wave: usize,
+    spawn_pending: bool,
+}
+
+impl WaveDirector {
+    pub fn new() -> Self {
+        Self {
+            current_wave: 0,
+            spawn_pending: true,
+        }
+    }
+
+    pub fn reset(&mut self) {
+        self.current_wave = 0;
+        self.spawn_pending = true;
+    }
+
+    pub fn wave_number(&self) -> usize {
+        self.current_wave + 1
+    }
+
+    pub fn queue_next_wave(&mut self) {
+        self.current_wave += 1;
+        self.spawn_pending = true;
+    }
+
+    pub fn consume_spawn_request(&mut self) -> Option<WaveSpawnRequest> {
+        if !self.spawn_pending {
+            return None;
+        }
+
+        self.spawn_pending = false;
+        let def_index = self.current_wave % WAVE_DEFINITIONS.len();
+        let difficulty_cycle = self.current_wave / WAVE_DEFINITIONS.len();
+        Some(WaveSpawnRequest {
+            difficulty_cycle,
+            definition: &WAVE_DEFINITIONS[def_index],
+        })
+    }
+}
+
 /// Game-wide singleton state. Lives outside the ECS world because hecs is
 /// optimized for many same-shaped entities, not per-frame global state.
 pub struct Resources {
@@ -53,6 +176,7 @@ pub struct Resources {
     pub audio_queue: Vec<SoundId>,
     pub input: InputState,
     pub debug_enabled: bool,
+    pub wave_director: WaveDirector,
 }
 
 impl Resources {
@@ -71,6 +195,7 @@ impl Resources {
             audio_queue: Vec::new(),
             input: InputState::default(),
             debug_enabled: false,
+            wave_director: WaveDirector::new(),
         }
     }
 

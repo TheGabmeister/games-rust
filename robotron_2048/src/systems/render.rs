@@ -1,5 +1,5 @@
-use macroquad::prelude::*;
 use hecs::World;
+use macroquad::prelude::*;
 
 use crate::components::*;
 use crate::resources::Resources;
@@ -19,9 +19,8 @@ pub fn system_draw(world: &World, res: &Resources) {
 
     for (_, pos, tex_id, tint) in drawables {
         let tex = res.texture(tex_id); // &Texture2D
-        let w   = tex.width();
-        let h   = tex.height();
+        let w = tex.width();
+        let h = tex.height();
         draw_texture(tex, pos.x - w / 2.0, pos.y - h / 2.0, tint);
     }
-
 }

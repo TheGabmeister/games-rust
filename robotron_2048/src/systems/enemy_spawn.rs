@@ -1,89 +1,159 @@
-use hecs::World;
-use macroquad::prelude::*;
 use ::rand::RngExt;
+use hecs::{EntityBuilder, With, World};
+use macroquad::prelude::*;
 
 use crate::components::*;
+use crate::resources::{WaveDirector, WaveSpawnRequest};
 
 const ENEMY_PALETTE: [Color; 6] = [RED, GREEN, BLUE, YELLOW, ORANGE, MAGENTA];
-// Step 4 baseline: spawn Grunts only until other enemy behaviors are implemented.
-const SPAWN_KINDS: [EnemyKind; 1] = [EnemyKind::Grunt];
+const HULK_HIT_SLOW_SECONDS: f32 = 0.35;
+const HULK_KNOCKBACK_SPEED: f32 = 180.0;
+const MIN_SPAWN_DISTANCE_FROM_PLAYER: f32 = 140.0;
+const SPAWN_MARGIN: f32 = 24.0;
 
-pub fn batch_spawn_enemies(world: &mut World, n: usize) {
+pub fn system_wave_director(world: &mut World, wave_director: &mut WaveDirector) {
+    let Some(request) = wave_director.consume_spawn_request() else {
+        return;
+    };
+
+    spawn_wave(world, request);
+}
+
+fn spawn_wave(world: &mut World, request: WaveSpawnRequest) {
     let mut rng = ::rand::rng();
-    for _ in 0..n {
-        let pos = vec2(rng.random_range(0.0..800.0), rng.random_range(0.0..600.0));
-        let kind = SPAWN_KINDS[rng.random_range(0..SPAWN_KINDS.len())];
-        spawn_enemy(world, kind, pos);
-    }
+    let player_pos = world
+        .query::<With<&Position, &Player>>()
+        .iter()
+        .next()
+        .map(|pos| pos.0);
 
-    // Step 5 test setup: always start with two Hulks.
-    let hulk_spawns = [vec2(120.0, 120.0), vec2(680.0, 120.0)];
-    for pos in hulk_spawns {
-        spawn_enemy(world, EnemyKind::Hulk, pos);
+    for entry in request.definition.entries {
+        let count = scaled_wave_count(entry.count, request.difficulty_cycle);
+        for _ in 0..count {
+            let mut spawn_pos = random_arena_position(&mut rng);
+            for _ in 0..8 {
+                if player_pos.is_none_or(|player| {
+                    player.distance(spawn_pos) >= MIN_SPAWN_DISTANCE_FROM_PLAYER
+                }) {
+                    break;
+                }
+                spawn_pos = random_arena_position(&mut rng);
+            }
+            spawn_enemy(world, entry.kind, spawn_pos);
+        }
     }
+}
+
+fn scaled_wave_count(base: usize, difficulty_cycle: usize) -> usize {
+    base + difficulty_cycle * base.max(1).div_ceil(2)
+}
+
+fn random_arena_position(rng: &mut ::rand::rngs::ThreadRng) -> Vec2 {
+    let min_x = SPAWN_MARGIN;
+    let max_x = (screen_width() - SPAWN_MARGIN).max(min_x + 1.0);
+    let min_y = SPAWN_MARGIN;
+    let max_y = (screen_height() - SPAWN_MARGIN).max(min_y + 1.0);
+    vec2(
+        rng.random_range(min_x..max_x),
+        rng.random_range(min_y..max_y),
+    )
+}
+
+fn clamp_to_arena(pos: Vec2, radius: f32) -> Vec2 {
+    let min_x = radius + SPAWN_MARGIN;
+    let max_x = (screen_width() - radius - SPAWN_MARGIN).max(min_x);
+    let min_y = radius + SPAWN_MARGIN;
+    let max_y = (screen_height() - radius - SPAWN_MARGIN).max(min_y);
+    vec2(pos.x.clamp(min_x, max_x), pos.y.clamp(min_y, max_y))
 }
 
 pub fn spawn_enemy(world: &mut World, kind: EnemyKind, pos: Vec2) {
     let profile = enemy_profile(kind);
     let tint = ENEMY_PALETTE[(kind as usize) % ENEMY_PALETTE.len()];
+    let clamped_pos = clamp_to_arena(pos, profile.radius);
+    let mut entity = EntityBuilder::new();
 
-    world.spawn((
-        Position(pos),
-        Velocity(Vec2::ZERO),
-        Speed(profile.speed),
-        Health(profile.health),
-        HitSlow(0.0),
-        kind,
-        Invulnerable(matches!(kind, EnemyKind::Hulk)),
-        FireCooldown {
-            remaining: profile.fire_period,
-            period: profile.fire_period,
-        },
-        SpawnCooldown {
-            remaining: profile.spawn_period,
-            period: profile.spawn_period,
-        },
-        Sprite {
-            texture: TextureId::EnemyBlack,
-            tint,
-        },
-        DrawLayer(LAYER_ENEMY),
-        Collider::Circle {
-            radius: profile.radius,
-        },
-    ));
+    entity.add(Position(clamped_pos));
+    entity.add(Velocity(Vec2::ZERO));
+    entity.add(Speed(profile.speed));
+    entity.add(Health(profile.health));
+    entity.add(kind);
+    entity.add(Sprite {
+        texture: TextureId::EnemyBlack,
+        tint,
+    });
+    entity.add(DrawLayer(LAYER_ENEMY));
+    entity.add(Collider::Circle {
+        radius: profile.radius,
+    });
+
+    if profile.invulnerable {
+        entity.add(Invulnerable(true));
+    }
+    if let Some(chase) = profile.chase {
+        entity.add(chase);
+    }
+    if profile.uses_hit_slow {
+        entity.add(HitSlow(0.0));
+    }
+    if let Some(hit_reaction) = profile.hit_reaction {
+        entity.add(hit_reaction);
+    }
+    if let Some(attack) = profile.ranged_attack {
+        entity.add(attack);
+    }
+    if let Some(spawner) = profile.spawner {
+        entity.add(spawner);
+    }
+    if let Some(contact_damage) = profile.contact_damage {
+        entity.add(contact_damage);
+    }
+    if profile.counts_for_wave_clear {
+        entity.add(WaveClearTarget);
+    }
+
+    world.spawn(entity.build());
 }
 
-/// Enemy spawn dispatch point.
-/// This currently only advances spawn cooldowns; child spawning comes next.
-pub fn system_enemy_spawn(world: &mut World) {
-    let dt = get_frame_time();
+/// Tick spawner components and emit child enemies for entities that can spawn.
+pub fn system_enemy_spawn(world: &mut World, dt: f32) {
+    let mut rng = ::rand::rng();
+    let mut spawn_events: Vec<(EnemyKind, Vec2)> = Vec::new();
 
-    for (kind, cooldown) in &mut world.query::<(&EnemyKind, &mut SpawnCooldown)>() {
-        cooldown.remaining = (cooldown.remaining - dt).max(0.0);
-
-        match *kind {
-            EnemyKind::Sphereoid | EnemyKind::Quark => {
-                if cooldown.remaining <= 0.0 && cooldown.period > 0.0 {
-                    cooldown.remaining = cooldown.period;
-                }
-            }
-            EnemyKind::Grunt
-            | EnemyKind::Hulk
-            | EnemyKind::Brain
-            | EnemyKind::Enforcer
-            | EnemyKind::Tank
-            | EnemyKind::Prog => {}
+    for (pos, spawner) in &mut world.query::<(&Position, &mut Spawner)>() {
+        spawner.remaining = (spawner.remaining - dt).max(0.0);
+        if spawner.period <= 0.0 || spawner.remaining > 0.0 {
+            continue;
         }
+
+        for _ in 0..spawner.burst_count {
+            let angle = rng.random_range(0.0..(2.0 * std::f32::consts::PI));
+            let distance = rng.random_range(0.0..spawner.spawn_radius.max(0.0));
+            let offset = vec2(angle.cos(), angle.sin()) * distance;
+            spawn_events.push((spawner.spawn_kind, pos.0 + offset));
+        }
+
+        spawner.remaining = spawner.period;
+    }
+
+    for (kind, spawn_pos) in spawn_events {
+        spawn_enemy(world, kind, spawn_pos);
     }
 }
 
+#[derive(Clone, Copy)]
 struct EnemyProfile {
     speed: f32,
     health: i32,
     radius: f32,
-    fire_period: f32,
-    spawn_period: f32,
+    invulnerable: bool,
+    uses_hit_slow: bool,
+    counts_for_wave_clear: bool,
+    chase: Option<Chase>,
+    ranged_attack: Option<RangedAttack>,
+    spawner: Option<Spawner>,
+    contact_damage: Option<ContactDamage>,
+    hit_reaction: Option<HitReaction>,
 }
 
 fn enemy_profile(kind: EnemyKind) -> EnemyProfile {
@@ -92,57 +162,178 @@ fn enemy_profile(kind: EnemyKind) -> EnemyProfile {
             speed: 140.0,
             health: 1,
             radius: 16.0,
-            fire_period: 0.0,
-            spawn_period: 0.0,
+            invulnerable: false,
+            uses_hit_slow: false,
+            counts_for_wave_clear: true,
+            chase: Some(Chase {
+                steer_accel: 900.0,
+                forward_weight: 1.0,
+                strafe_weight: 0.0,
+                jitter_weight: 0.0,
+                hit_slow_multiplier: 1.0,
+            }),
+            ranged_attack: None,
+            spawner: None,
+            contact_damage: Some(ContactDamage { damage: 1 }),
+            hit_reaction: None,
         },
         EnemyKind::Hulk => EnemyProfile {
             speed: 80.0,
             health: 4,
             radius: 20.0,
-            fire_period: 0.0,
-            spawn_period: 0.0,
+            invulnerable: true,
+            uses_hit_slow: true,
+            counts_for_wave_clear: false,
+            chase: Some(Chase {
+                steer_accel: 260.0,
+                forward_weight: 1.0,
+                strafe_weight: 0.0,
+                jitter_weight: 0.0,
+                hit_slow_multiplier: 0.35,
+            }),
+            ranged_attack: None,
+            spawner: None,
+            contact_damage: None,
+            hit_reaction: Some(HitReaction {
+                hit_slow_seconds: HULK_HIT_SLOW_SECONDS,
+                knockback_speed: HULK_KNOCKBACK_SPEED,
+            }),
         },
         EnemyKind::Brain => EnemyProfile {
             speed: 120.0,
             health: 1,
             radius: 16.0,
-            fire_period: 3.5,
-            spawn_period: 0.0,
+            invulnerable: false,
+            uses_hit_slow: false,
+            counts_for_wave_clear: true,
+            chase: Some(Chase {
+                steer_accel: 600.0,
+                forward_weight: 1.0,
+                strafe_weight: 0.0,
+                jitter_weight: 0.15,
+                hit_slow_multiplier: 1.0,
+            }),
+            ranged_attack: None,
+            spawner: None,
+            contact_damage: Some(ContactDamage { damage: 1 }),
+            hit_reaction: None,
         },
         EnemyKind::Sphereoid => EnemyProfile {
             speed: 30.0,
             health: 2,
             radius: 22.0,
-            fire_period: 0.0,
-            spawn_period: 4.0,
+            invulnerable: false,
+            uses_hit_slow: false,
+            counts_for_wave_clear: true,
+            chase: None,
+            ranged_attack: None,
+            spawner: Some(Spawner {
+                remaining: 4.0,
+                period: 4.0,
+                spawn_kind: EnemyKind::Enforcer,
+                burst_count: 1,
+                spawn_radius: 90.0,
+            }),
+            contact_damage: Some(ContactDamage { damage: 1 }),
+            hit_reaction: None,
         },
         EnemyKind::Enforcer => EnemyProfile {
             speed: 110.0,
             health: 1,
             radius: 16.0,
-            fire_period: 1.5,
-            spawn_period: 0.0,
+            invulnerable: false,
+            uses_hit_slow: false,
+            counts_for_wave_clear: true,
+            chase: Some(Chase {
+                steer_accel: 520.0,
+                forward_weight: 0.45,
+                strafe_weight: 0.85,
+                jitter_weight: 0.55,
+                hit_slow_multiplier: 1.0,
+            }),
+            ranged_attack: Some(RangedAttack {
+                remaining: 1.5,
+                period: 1.5,
+                projectile_kind: ProjectileKind::EnforcerSpark,
+                projectile_speed: 260.0,
+                projectile_lifetime: 2.2,
+                projectile_radius: 4.0,
+                projectile_damage: 1,
+                projectile_texture: TextureId::PlayerLaser,
+                projectile_tint: ORANGE,
+                aim_jitter_rad: 0.35,
+            }),
+            spawner: None,
+            contact_damage: Some(ContactDamage { damage: 1 }),
+            hit_reaction: None,
         },
         EnemyKind::Quark => EnemyProfile {
             speed: 25.0,
             health: 3,
             radius: 22.0,
-            fire_period: 0.0,
-            spawn_period: 5.0,
+            invulnerable: false,
+            uses_hit_slow: false,
+            counts_for_wave_clear: true,
+            chase: None,
+            ranged_attack: None,
+            spawner: Some(Spawner {
+                remaining: 5.0,
+                period: 5.0,
+                spawn_kind: EnemyKind::Tank,
+                burst_count: 1,
+                spawn_radius: 95.0,
+            }),
+            contact_damage: Some(ContactDamage { damage: 1 }),
+            hit_reaction: None,
         },
         EnemyKind::Tank => EnemyProfile {
             speed: 70.0,
             health: 2,
             radius: 18.0,
-            fire_period: 2.0,
-            spawn_period: 0.0,
+            invulnerable: false,
+            uses_hit_slow: false,
+            counts_for_wave_clear: true,
+            chase: Some(Chase {
+                steer_accel: 360.0,
+                forward_weight: 1.0,
+                strafe_weight: 0.0,
+                jitter_weight: 0.1,
+                hit_slow_multiplier: 1.0,
+            }),
+            ranged_attack: Some(RangedAttack {
+                remaining: 2.0,
+                period: 2.0,
+                projectile_kind: ProjectileKind::TankShell,
+                projectile_speed: 210.0,
+                projectile_lifetime: 3.0,
+                projectile_radius: 6.0,
+                projectile_damage: 1,
+                projectile_texture: TextureId::PlayerLaser,
+                projectile_tint: YELLOW,
+                aim_jitter_rad: 0.12,
+            }),
+            spawner: None,
+            contact_damage: Some(ContactDamage { damage: 1 }),
+            hit_reaction: None,
         },
         EnemyKind::Prog => EnemyProfile {
             speed: 180.0,
             health: 1,
             radius: 14.0,
-            fire_period: 0.0,
-            spawn_period: 0.0,
+            invulnerable: false,
+            uses_hit_slow: false,
+            counts_for_wave_clear: true,
+            chase: Some(Chase {
+                steer_accel: 1100.0,
+                forward_weight: 1.0,
+                strafe_weight: 0.0,
+                jitter_weight: 0.15,
+                hit_slow_multiplier: 1.0,
+            }),
+            ranged_attack: None,
+            spawner: None,
+            contact_damage: Some(ContactDamage { damage: 1 }),
+            hit_reaction: None,
         },
     }
 }
