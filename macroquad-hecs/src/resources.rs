@@ -31,6 +31,7 @@ pub struct InputState {
     pub confirm_pressed: bool,
     pub cancel_pressed: bool,
     pub resume_pressed: bool,
+    pub debug_toggle_pressed: bool,
 }
 
 /// Game-wide singleton state. Lives outside the ECS world because hecs is
@@ -50,6 +51,7 @@ pub struct Resources {
     pub score: u32,
     pub audio_queue: Vec<SoundId>,
     pub input: InputState,
+    pub debug_enabled: bool,
 }
 
 impl Resources {
@@ -66,6 +68,7 @@ impl Resources {
             score: 0,
             audio_queue: Vec::new(),
             input: InputState::default(),
+            debug_enabled: false,
         }
     }
 

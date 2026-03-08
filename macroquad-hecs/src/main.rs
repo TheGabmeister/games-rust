@@ -29,6 +29,9 @@ async fn main() {
         // Capture all input exactly once per frame into a singleton resource.
         system_capture_input(&mut res.input);
         let input = res.input;
+        if input.debug_toggle_pressed {
+            res.debug_enabled = !res.debug_enabled;
+        }
 
         match res.state {
             GameState::MainMenu => {
@@ -37,7 +40,13 @@ async fn main() {
                 let cy = screen_height() / 2.0;
                 draw_text("ROBOTRON 2084", cx - 150.0, cy - 50.0, 52.0, WHITE);
                 draw_text("Press [Enter] to start", cx - 130.0, cy + 8.0, 26.0, GRAY);
-                draw_text("[WASD] move  [LMB] shoot", cx - 130.0, cy + 40.0, 20.0, DARKGRAY);
+                draw_text(
+                    "[WASD] move  [LMB] shoot  [F1] debug",
+                    cx - 190.0,
+                    cy + 40.0,
+                    20.0,
+                    DARKGRAY,
+                );
 
                 if input.confirm_pressed {
                     world.clear();
@@ -78,8 +87,18 @@ async fn main() {
                 // --- draw ---
                 clear_background(BLACK);
                 system_draw(&world, &res);
+                if res.debug_enabled {
+                    system_draw_colliders(&world);
+                    draw_text("DEBUG COLLIDERS [F1]", 10.0, 60.0, 16.0, LIME);
+                }
                 draw_text(&format!("Score: {}", res.score), 10.0, 20.0, 20.0, WHITE);
-                draw_text("[WASD] move  [LMB] shoot  [Esc] pause", 10.0, 40.0, 16.0, DARKGRAY);
+                draw_text(
+                    "[WASD] move  [LMB] shoot  [Esc] pause  [F1] debug",
+                    10.0,
+                    40.0,
+                    16.0,
+                    DARKGRAY,
+                );
             }
 
             GameState::Paused => {
@@ -98,6 +117,10 @@ async fn main() {
                 let cy = screen_height() / 2.0;
                 draw_text("PAUSED", cx - 80.0, cy - 30.0, 52.0, YELLOW);
                 draw_text("[Space] resume  [Esc] menu", cx - 140.0, cy + 22.0, 22.0, GRAY);
+                if res.debug_enabled {
+                    system_draw_colliders(&world);
+                    draw_text("DEBUG COLLIDERS [F1]", 10.0, 20.0, 16.0, LIME);
+                }
 
                 if input.resume_pressed {
                     res.state = GameState::Playing;

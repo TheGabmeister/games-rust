@@ -31,6 +31,7 @@ pub fn system_capture_input(input: &mut InputState) {
     input.confirm_pressed = is_key_pressed(KeyCode::Enter);
     input.cancel_pressed = is_key_pressed(KeyCode::Escape);
     input.resume_pressed = is_key_pressed(KeyCode::Space);
+    input.debug_toggle_pressed = is_key_pressed(KeyCode::F1);
 }
 
 /// Write player velocity from captured input.
