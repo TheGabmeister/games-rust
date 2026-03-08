@@ -57,8 +57,12 @@ impl Game {
             self.player.update(dt, input);
 
             if input.shoot {
+                let speed = 500.0_f32;
                 self.player_lasers.push(Laser::new(
-                    self.player.x, self.player.y, -500.0, self.laser_texture.clone(),
+                    self.player.x, self.player.y,
+                    self.player.angle.sin() * speed,
+                    -self.player.angle.cos() * speed,
+                    self.laser_texture.clone(),
                 ));
                 play_sound(&self.sfx_laser, PlaySoundParams { looped: false, volume: 1.0 });
             }
@@ -67,7 +71,7 @@ impl Game {
         if self.enemy.alive {
             if self.enemy.update(dt) {
                 self.enemy_lasers.push(Laser::new(
-                    self.enemy.x, self.enemy.y, 500.0, self.enemy_laser_texture.clone(),
+                    self.enemy.x, self.enemy.y, 0.0, 500.0, self.enemy_laser_texture.clone(),
                 ));
                 play_sound(&self.sfx_laser, PlaySoundParams { looped: false, volume: 1.0 });
             }

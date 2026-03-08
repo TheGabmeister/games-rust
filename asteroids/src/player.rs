@@ -13,7 +13,7 @@ pub struct Player {
     pub y:     f32,
     pub alive: bool,
     pub lives: u32,
-    angle:     f32, // radians, 0 = facing up
+    pub angle: f32, // radians, 0 = facing up
     vx:        f32,
     vy:        f32,
     texture:   Texture2D,
