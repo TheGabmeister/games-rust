@@ -1,4 +1,5 @@
 use macroquad::prelude::*;
+use serde::Deserialize;
 
 fn window_conf() -> Conf {
     Conf {
@@ -9,54 +10,109 @@ fn window_conf() -> Conf {
     }
 }
 
+#[derive(Deserialize)]
+struct TextureEntry {
+    id: String,
+    path: String,
+}
+
+#[derive(Deserialize)]
+struct Assets {
+    textures: Vec<TextureEntry>,
+}
+
+impl Assets {
+    fn texture_path(&self, id: &str) -> Option<&str> {
+        self.textures.iter().find(|t| t.id == id).map(|t| t.path.as_str())
+    }
+}
+
 struct Player {
     x: f32,
     y: f32,
     speed: f32,
-    radius: f32,
+    texture: Texture2D,
 }
 
 impl Player {
-    fn new() -> Self {
+    fn new(texture: Texture2D) -> Self {
         Self {
             x: screen_width() / 2.0,
             y: screen_height() / 2.0,
             speed: 200.0,
-            radius: 15.0,
+            texture,
         }
     }
 
     fn update(&mut self, dt: f32) {
-        let left = is_key_down(KeyCode::A) || is_key_down(KeyCode::Left);
+        let left  = is_key_down(KeyCode::A) || is_key_down(KeyCode::Left);
         let right = is_key_down(KeyCode::D) || is_key_down(KeyCode::Right);
-        let up = is_key_down(KeyCode::W) || is_key_down(KeyCode::Up);
-        let down = is_key_down(KeyCode::S) || is_key_down(KeyCode::Down);
+        let up    = is_key_down(KeyCode::W) || is_key_down(KeyCode::Up);
+        let down  = is_key_down(KeyCode::S) || is_key_down(KeyCode::Down);
 
         if left  { self.x -= self.speed * dt; }
         if right { self.x += self.speed * dt; }
         if up    { self.y -= self.speed * dt; }
         if down  { self.y += self.speed * dt; }
 
-        self.x = self.x.clamp(self.radius, screen_width() - self.radius);
-        self.y = self.y.clamp(self.radius, screen_height() - self.radius);
+        let hw = self.texture.width() / 2.0;
+        let hh = self.texture.height() / 2.0;
+        self.x = self.x.clamp(hw, screen_width() - hw);
+        self.y = self.y.clamp(hh, screen_height() - hh);
     }
 
     fn draw(&self) {
-        draw_circle(self.x, self.y, self.radius, WHITE);
+        let hw = self.texture.width() / 2.0;
+        let hh = self.texture.height() / 2.0;
+        draw_texture(&self.texture, self.x - hw, self.y - hh, WHITE);
+    }
+}
+
+struct GameState {
+    should_quit: bool,
+    player: Player,
+}
+
+impl GameState {
+    fn new(player: Player) -> Self {
+        Self {
+            should_quit: false,
+            player,
+        }
+    }
+
+    fn update(&mut self, dt: f32) {
+        if is_key_pressed(KeyCode::Q) {
+            self.should_quit = true;
+        }
+        self.player.update(dt);
+    }
+
+    fn draw(&self) {
+        clear_background(BLACK);
+        self.player.draw();
     }
 }
 
 #[macroquad::main(window_conf)]
 async fn main() {
-    let mut player = Player::new();
+    let json = std::fs::read_to_string("assets/assets.json").expect("Failed to read assets.json");
+    let assets: Assets = serde_json::from_str(&json).expect("Failed to parse assets.json");
+
+    let player_path = assets.texture_path("player").expect("No 'player' texture in assets.json");
+    let player_texture = load_texture(player_path).await.expect("Failed to load player texture");
+
+    let mut state = GameState::new(Player::new(player_texture));
 
     loop {
         let dt = get_frame_time();
+        state.update(dt);
 
-        player.update(dt);
+        if state.should_quit {
+            std::process::exit(0);
+        }
 
-        clear_background(BLACK);
-        player.draw();
+        state.draw();
 
         next_frame().await
     }
