@@ -66,6 +66,7 @@ struct Player {
     y: f32,
     speed: f32,
     texture: Texture2D,
+    alive: bool,
 }
 
 impl Player {
@@ -75,6 +76,7 @@ impl Player {
             y: screen_height() / 2.0,
             speed: 200.0,
             texture,
+            alive: true,
         }
     }
 
@@ -95,6 +97,12 @@ impl Player {
         self.y = self.y.clamp(hh, screen_height() - hh);
     }
 
+    fn collider(&self) -> Rect {
+        let hw = self.texture.width() / 2.0;
+        let hh = self.texture.height() / 2.0;
+        Rect::new(self.x - hw, self.y - hh, self.texture.width(), self.texture.height())
+    }
+
     fn draw(&self) {
         let hw = self.texture.width() / 2.0;
         let hh = self.texture.height() / 2.0;
@@ -105,21 +113,28 @@ impl Player {
 struct Laser {
     x: f32,
     y: f32,
-    speed: f32,
+    vy: f32,
     texture: Texture2D,
     alive: bool,
 }
 
 impl Laser {
-    fn new(x: f32, y: f32, texture: Texture2D) -> Self {
-        Self { x, y, speed: 500.0, texture, alive: true }
+    fn new(x: f32, y: f32, vy: f32, texture: Texture2D) -> Self {
+        Self { x, y, vy, texture, alive: true }
     }
 
     fn update(&mut self, dt: f32) {
-        self.y -= self.speed * dt;
-        if self.y < -self.texture.height() {
+        self.y += self.vy * dt;
+        let h = self.texture.height();
+        if self.y < -h || self.y > screen_height() + h {
             self.alive = false;
         }
+    }
+
+    fn collider(&self) -> Rect {
+        let hw = self.texture.width() / 2.0;
+        let hh = self.texture.height() / 2.0;
+        Rect::new(self.x - hw, self.y - hh, self.texture.width(), self.texture.height())
     }
 
     fn draw(&self) {
@@ -133,6 +148,8 @@ struct Enemy {
     x: f32,
     y: f32,
     texture: Texture2D,
+    alive: bool,
+    shoot_timer: f32,
 }
 
 impl Enemy {
@@ -141,7 +158,25 @@ impl Enemy {
             x: 100.0,
             y: 100.0,
             texture,
+            alive: true,
+            shoot_timer: 5.0,
         }
+    }
+
+    // Returns true when it's time to fire.
+    fn update(&mut self, dt: f32) -> bool {
+        self.shoot_timer -= dt;
+        if self.shoot_timer <= 0.0 {
+            self.shoot_timer = 5.0;
+            return true;
+        }
+        false
+    }
+
+    fn collider(&self) -> Rect {
+        let hw = self.texture.width() / 2.0;
+        let hh = self.texture.height() / 2.0;
+        Rect::new(self.x - hw, self.y - hh, self.texture.width(), self.texture.height())
     }
 
     fn draw(&self) {
@@ -179,30 +214,56 @@ async fn main() {
 
     let mut state = GameState::new();
     let mut player = Player::new(player_texture);
-    let enemy = Enemy::new(enemy_texture);
-    let mut lasers: Vec<Laser> = Vec::new();
+    let mut enemy = Enemy::new(enemy_texture);
+    let mut player_lasers: Vec<Laser> = Vec::new();
+    let mut enemy_lasers: Vec<Laser> = Vec::new();
 
     loop {
         let dt = get_frame_time();
         state.update();
-        player.update(dt);
 
-        if is_key_pressed(KeyCode::Space) {
-            lasers.push(Laser::new(player.x, player.y, laser_texture.clone()));
-            play_sound(&sfx_laser, PlaySoundParams { looped: false, volume: 1.0 });
+        if player.alive {
+            player.update(dt);
+
+            if is_key_pressed(KeyCode::Space) {
+                player_lasers.push(Laser::new(player.x, player.y, -500.0, laser_texture.clone()));
+                play_sound(&sfx_laser, PlaySoundParams { looped: false, volume: 1.0 });
+            }
         }
 
-        for laser in &mut lasers {
-            laser.update(dt);
+        if enemy.alive {
+            if enemy.update(dt) {
+                enemy_lasers.push(Laser::new(enemy.x, enemy.y, 500.0, laser_texture.clone()));
+                play_sound(&sfx_laser, PlaySoundParams { looped: false, volume: 1.0 });
+            }
+
+            for laser in &mut player_lasers {
+                if laser.alive && laser.collider().overlaps(&enemy.collider()) {
+                    laser.alive = false;
+                    enemy.alive = false;
+                }
+            }
         }
-        lasers.retain(|l| l.alive);
+
+        if player.alive {
+            for laser in &mut enemy_lasers {
+                if laser.alive && laser.collider().overlaps(&player.collider()) {
+                    laser.alive = false;
+                    player.alive = false;
+                }
+            }
+        }
+
+        for laser in &mut player_lasers { laser.update(dt); }
+        for laser in &mut enemy_lasers  { laser.update(dt); }
+        player_lasers.retain(|l| l.alive);
+        enemy_lasers.retain(|l| l.alive);
 
         clear_background(BLACK);
-        player.draw();
-        enemy.draw();
-        for laser in &lasers {
-            laser.draw();
-        }
+        if player.alive { player.draw(); }
+        if enemy.alive  { enemy.draw(); }
+        for laser in &player_lasers { laser.draw(); }
+        for laser in &enemy_lasers  { laser.draw(); }
 
         if state.should_quit {
             break;
