@@ -14,7 +14,7 @@ use components::{Position, Velocity, Speed, Lifetime, Enemy};
 use resources::{GameState, Resources, SoundId};
 use systems::*;
 
-#[macroquad::main("Space Shooter")]
+#[macroquad::main("Robotron 2084")]
 async fn main() {
     let assets   = Assets::load().await;
     let mut res  = Resources::new(assets);
@@ -34,7 +34,7 @@ async fn main() {
                 clear_background(BLACK);
                 let cx = screen_width()  / 2.0;
                 let cy = screen_height() / 2.0;
-                draw_text("SPACE SHOOTER",             cx - 150.0, cy - 50.0, 52.0, WHITE);
+                draw_text("ROBOTRON 2084",             cx - 150.0, cy - 50.0, 52.0, WHITE);
                 draw_text("Press [Enter] to start",    cx - 130.0, cy +  8.0, 26.0, GRAY);
                 draw_text("[WASD] move  [LMB] shoot",  cx - 130.0, cy + 40.0, 20.0, DARKGRAY);
 
@@ -55,11 +55,9 @@ async fn main() {
                 system_player_shoot(&mut world, &mut res);
                 system_wander_velocity(&mut world, &mut wander_query);
                 system_integrate_velocity(&mut world, &mut integrate_query);
-                system_fire_at_closest(&mut world);
                 system_projectile_collision(&mut world, &mut res);
                 system_tick_lifetime(&mut world, &mut lifetime_query);
                 system_remove_expired(&mut world);
-                system_remove_dead(&mut world, &mut res);
                 system_audio(&mut res);
 
                 // Wave complete when all enemies are gone.

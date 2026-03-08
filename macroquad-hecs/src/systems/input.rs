@@ -4,10 +4,9 @@ use hecs::*;
 use crate::components::*;
 use crate::resources::{Resources, SoundId};
 
-const PLAYER_SPEED:  f32 = 200.0;
-const BULLET_SPEED:  f32 = 500.0;
-const BULLET_DAMAGE: i32 = 25;
-const BULLET_LIFE:   f32 = 2.0; // seconds
+const PLAYER_SPEED: f32 = 200.0;
+const BULLET_SPEED: f32 = 500.0;
+const BULLET_LIFE:  f32 = 2.0; // seconds
 
 /// Write player velocity from keyboard input.
 /// The integrator applies it to Position the same frame.
@@ -41,9 +40,9 @@ pub fn system_player_shoot(world: &mut World, res: &mut Resources) {
     world.spawn((
         Position(origin),
         Velocity(dir * BULLET_SPEED),
-        Damage(BULLET_DAMAGE),
         Lifetime(BULLET_LIFE),
         Projectile { owner },
+        Collider::Circle { radius: 4.0 },
         Sprite { texture: TextureId::PlayerLaser, tint: WHITE },
         DrawLayer(LAYER_PROJECTILE),
     ));

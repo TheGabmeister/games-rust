@@ -12,12 +12,9 @@ pub fn batch_spawn_entities(world: &mut World, n: usize) {
         let pos    = Position(vec2(rng.random_range(0.0..800.0), rng.random_range(0.0..600.0)));
         let vel    = Velocity(Vec2::ZERO);
         let speed  = Speed(rng.random_range(50.0..200.0));
-        let hp     = Health(rng.random_range(30..50));
-        let dmg    = Damage(rng.random_range(1..10));
-        let kc     = KillCount(0);
         let tint   = PALETTE[rng.random_range(0..PALETTE.len())];
         let sprite = Sprite { texture: TextureId::EnemyBlack, tint };
-        (pos, vel, speed, hp, dmg, kc, Enemy, sprite, DrawLayer(LAYER_ENEMY))
+        (pos, vel, speed, Enemy, sprite, DrawLayer(LAYER_ENEMY), Collider::Circle { radius: 16.0 })
     });
     world.spawn_batch(to_spawn);
 }
@@ -31,5 +28,6 @@ pub fn spawn_player(world: &mut World) {
         Player,
         Sprite { texture: TextureId::PlayerShip, tint: WHITE },
         DrawLayer(LAYER_PLAYER),
+        Collider::Circle { radius: 16.0 },
     ));
 }
