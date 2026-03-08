@@ -2,6 +2,7 @@ use macroquad::audio::{play_sound, PlaySoundParams, Sound};
 use macroquad::prelude::*;
 
 use crate::assets::Assets;
+use crate::asteroid::Asteroid;
 use crate::input::InputState;
 use crate::collidable::overlaps;
 use crate::enemy::Enemy;
@@ -13,12 +14,14 @@ pub struct Game {
     player:        Player,
     enemy:         Enemy,
     pickup:        Pickup,
+    asteroids:     Vec<Asteroid>,
     player_lasers: Vec<Laser>,
     enemy_lasers:  Vec<Laser>,
     laser_texture:       Texture2D,
     enemy_laser_texture: Texture2D,
     sfx_laser:     Sound,
     pub should_quit: bool,
+    score:         u32,
 }
 
 impl Game {
@@ -27,12 +30,19 @@ impl Game {
             player:        Player::new(assets.player_ship.clone()),
             enemy:         Enemy::new(assets.enemy_ufo_green.clone()),
             pickup:        Pickup::new(600.0, 450.0, assets.pill_blue.clone()),
+            asteroids:     vec![
+                Asteroid::new(100.0, 100.0, assets.asteroid_big.clone()),
+                Asteroid::new(700.0, 100.0, assets.asteroid_big.clone()),
+                Asteroid::new(100.0, 500.0, assets.asteroid_big.clone()),
+                Asteroid::new(700.0, 500.0, assets.asteroid_big.clone()),
+            ],
             player_lasers: Vec::new(),
             enemy_lasers:  Vec::new(),
             laser_texture:       assets.player_laser.clone(),
             enemy_laser_texture: assets.enemy_laser.clone(),
             sfx_laser:     assets.sfx_laser.clone(),
             should_quit:   false,
+            score:         0,
         }
     }
 
@@ -82,6 +92,17 @@ impl Game {
             }
         }
 
+        for asteroid in &mut self.asteroids {
+            for laser in &mut self.player_lasers {
+                if laser.alive && asteroid.alive && overlaps(laser, asteroid) {
+                    laser.alive = false;
+                    asteroid.alive = false;
+                    self.score += 100;
+                }
+            }
+        }
+        self.asteroids.retain(|a| a.alive);
+        for asteroid in &mut self.asteroids { asteroid.update(dt); }
         for laser in &mut self.player_lasers { laser.update(dt); }
         for laser in &mut self.enemy_lasers  { laser.update(dt); }
         self.player_lasers.retain(|l| l.alive);
@@ -93,9 +114,11 @@ impl Game {
         if self.player.alive { self.player.draw(); }
         if self.enemy.alive  { self.enemy.draw(); }
         if self.pickup.alive { self.pickup.draw(); }
+        for asteroid in &self.asteroids { asteroid.draw(); }
         for laser in &self.player_lasers { laser.draw(); }
         for laser in &self.enemy_lasers  { laser.draw(); }
 
         draw_text(&format!("Lives: {}", self.player.lives), 10.0, 24.0, 24.0, WHITE);
+        draw_text(&format!("Score: {}", self.score), 10.0, 50.0, 24.0, WHITE);
     }
 }

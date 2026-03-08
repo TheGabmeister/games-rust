@@ -4,6 +4,7 @@
 use macroquad::audio::{play_sound, PlaySoundParams};
 use macroquad::prelude::*;
 
+mod asteroid;
 mod assets;
 mod collidable;
 mod enemy;
