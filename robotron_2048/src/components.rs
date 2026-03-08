@@ -42,6 +42,13 @@ pub struct Spawner {
     pub spawn_kind: EnemyKind,
     pub burst_count: u32,
     pub spawn_radius: f32,
+    pub embryo_mature_time: f32, // >0 spawns as embryo then matures into spawn_kind
+}
+
+#[derive(Clone, Copy)]
+pub struct Growth {
+    pub remaining: f32,
+    pub target_kind: EnemyKind,
 }
 
 #[derive(Clone, Copy)]

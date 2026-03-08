@@ -74,7 +74,7 @@ const WAVE_2: [WaveSpawnSpec; 2] = [
         count: 2,
     },
 ];
-const WAVE_3: [WaveSpawnSpec; 3] = [
+const WAVE_3: [WaveSpawnSpec; 4] = [
     WaveSpawnSpec {
         kind: EnemyKind::Grunt,
         count: 2,
@@ -87,8 +87,12 @@ const WAVE_3: [WaveSpawnSpec; 3] = [
         kind: EnemyKind::Enforcer,
         count: 3,
     },
+    WaveSpawnSpec {
+        kind: EnemyKind::Sphereoid,
+        count: 1,
+    },
 ];
-const WAVE_4: [WaveSpawnSpec; 3] = [
+const WAVE_4: [WaveSpawnSpec; 4] = [
     WaveSpawnSpec {
         kind: EnemyKind::Grunt,
         count: 2,
@@ -100,6 +104,10 @@ const WAVE_4: [WaveSpawnSpec; 3] = [
     WaveSpawnSpec {
         kind: EnemyKind::Enforcer,
         count: 4,
+    },
+    WaveSpawnSpec {
+        kind: EnemyKind::Sphereoid,
+        count: 2,
     },
 ];
 

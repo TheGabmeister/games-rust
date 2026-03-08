@@ -10,6 +10,7 @@ const HULK_HIT_SLOW_SECONDS: f32 = 0.35;
 const HULK_KNOCKBACK_SPEED: f32 = 180.0;
 const MIN_SPAWN_DISTANCE_FROM_PLAYER: f32 = 140.0;
 const SPAWN_MARGIN: f32 = 24.0;
+const ENFORCER_EMBRYO_RADIUS: f32 = 9.0;
 
 pub fn system_wave_director(world: &mut World, wave_director: &mut WaveDirector) {
     let Some(request) = wave_director.consume_spawn_request() else {
@@ -115,10 +116,34 @@ pub fn spawn_enemy(world: &mut World, kind: EnemyKind, pos: Vec2) {
     world.spawn(entity.build());
 }
 
+fn spawn_embryo(world: &mut World, target_kind: EnemyKind, pos: Vec2, mature_time: f32) {
+    let clamped_pos = clamp_to_arena(pos, ENFORCER_EMBRYO_RADIUS);
+
+    world.spawn((
+        Position(clamped_pos),
+        Velocity(Vec2::ZERO),
+        Health(1),
+        target_kind,
+        Growth {
+            remaining: mature_time,
+            target_kind,
+        },
+        Sprite {
+            texture: TextureId::EnemyBlack,
+            tint: PINK,
+        },
+        DrawLayer(LAYER_ENEMY),
+        Collider::Circle {
+            radius: ENFORCER_EMBRYO_RADIUS,
+        },
+        WaveClearTarget,
+    ));
+}
+
 /// Tick spawner components and emit child enemies for entities that can spawn.
 pub fn system_enemy_spawn(world: &mut World, dt: f32) {
     let mut rng = ::rand::rng();
-    let mut spawn_events: Vec<(EnemyKind, Vec2)> = Vec::new();
+    let mut spawn_events: Vec<(EnemyKind, Vec2, f32)> = Vec::new();
 
     for (pos, spawner) in &mut world.query::<(&Position, &mut Spawner)>() {
         spawner.remaining = (spawner.remaining - dt).max(0.0);
@@ -130,14 +155,39 @@ pub fn system_enemy_spawn(world: &mut World, dt: f32) {
             let angle = rng.random_range(0.0..(2.0 * std::f32::consts::PI));
             let distance = rng.random_range(0.0..spawner.spawn_radius.max(0.0));
             let offset = vec2(angle.cos(), angle.sin()) * distance;
-            spawn_events.push((spawner.spawn_kind, pos.0 + offset));
+            spawn_events.push((
+                spawner.spawn_kind,
+                pos.0 + offset,
+                spawner.embryo_mature_time,
+            ));
         }
 
         spawner.remaining = spawner.period;
     }
 
-    for (kind, spawn_pos) in spawn_events {
-        spawn_enemy(world, kind, spawn_pos);
+    for (kind, spawn_pos, embryo_mature_time) in spawn_events {
+        if embryo_mature_time > 0.0 {
+            spawn_embryo(world, kind, spawn_pos, embryo_mature_time);
+        } else {
+            spawn_enemy(world, kind, spawn_pos);
+        }
+    }
+}
+
+/// Tick embryo growth and replace matured embryos with their final enemy form.
+pub fn system_enemy_maturation(world: &mut World, dt: f32) {
+    let mut mature_events: Vec<(hecs::Entity, EnemyKind, Vec2)> = Vec::new();
+
+    for (entity, pos, growth) in &mut world.query::<(hecs::Entity, &Position, &mut Growth)>() {
+        growth.remaining -= dt;
+        if growth.remaining <= 0.0 {
+            mature_events.push((entity, growth.target_kind, pos.0));
+        }
+    }
+
+    for (entity, target_kind, pos) in mature_events {
+        let _ = world.despawn(entity);
+        spawn_enemy(world, target_kind, pos);
     }
 }
 
@@ -233,6 +283,7 @@ fn enemy_profile(kind: EnemyKind) -> EnemyProfile {
                 spawn_kind: EnemyKind::Enforcer,
                 burst_count: 1,
                 spawn_radius: 90.0,
+                embryo_mature_time: 1.7,
             }),
             contact_damage: Some(ContactDamage { damage: 1 }),
             hit_reaction: None,
@@ -282,6 +333,7 @@ fn enemy_profile(kind: EnemyKind) -> EnemyProfile {
                 spawn_kind: EnemyKind::Tank,
                 burst_count: 1,
                 spawn_radius: 95.0,
+                embryo_mature_time: 0.0,
             }),
             contact_damage: Some(ContactDamage { damage: 1 }),
             hit_reaction: None,

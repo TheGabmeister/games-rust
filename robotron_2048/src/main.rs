@@ -127,6 +127,7 @@ fn update_playing_step(
     system_enemy_ai(world, dt);
     system_enemy_attack(world, dt);
     system_enemy_spawn(world, dt);
+    system_enemy_maturation(world, dt);
     system_player_move(world, input);
     system_player_shoot(world, input, res);
     system_integrate_velocity(world, &mut sim.integrate_query, dt);

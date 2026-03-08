@@ -54,7 +54,8 @@ pub fn system_projectile_collision(
     let mut consumed_projectiles: HashSet<Entity> = HashSet::new();
     let mut killed_enemies: HashSet<Entity> = HashSet::new();
     let mut hit_count: u32 = 0;
-    let mut kill_count: u32 = 0;
+    let mut kill_score: u32 = 0;
+    let mut spark_score: u32 = 0;
 
     // Sparks are destructible by player projectiles.
     for player_proj in &player_projectiles {
@@ -77,6 +78,7 @@ pub fn system_projectile_collision(
                 consumed_projectiles.insert(spark_proj.entity);
                 cmd.despawn(player_proj.entity);
                 cmd.despawn(spark_proj.entity);
+                spark_score += projectile_score(spark_proj.projectile.kind);
                 hit_count += 1;
                 break;
             }
@@ -92,6 +94,7 @@ pub fn system_projectile_collision(
         maybe_hit_slow,
         hit_reaction,
         invulnerable,
+        enemy_kind,
     ) in &mut world.query::<(
         Entity,
         &Position,
@@ -101,6 +104,7 @@ pub fn system_projectile_collision(
         Option<&mut HitSlow>,
         Option<&HitReaction>,
         Option<&Invulnerable>,
+        &EnemyKind,
     )>() {
         if killed_enemies.contains(&enemy_e) {
             continue;
@@ -132,15 +136,15 @@ pub fn system_projectile_collision(
                 health.0 -= dmg;
                 if health.0 <= 0 && killed_enemies.insert(enemy_e) {
                     cmd.despawn(enemy_e);
-                    kill_count += 1;
+                    kill_score += enemy_score(*enemy_kind);
                     break; // dead enemy should not absorb more projectiles this frame
                 }
             }
         }
     }
 
-    // Credit score per kill; queue impact sound per registered hit.
-    res.score += kill_count;
+    // Credit score for kills plus spark interceptions.
+    res.score += kill_score + spark_score;
     for _ in 0..hit_count {
         res.queue_sound(SoundId::Bump);
     }
@@ -180,4 +184,19 @@ pub fn system_player_contact_damage(world: &World) -> bool {
     }
 
     false
+}
+
+fn enemy_score(kind: EnemyKind) -> u32 {
+    match kind {
+        EnemyKind::Sphereoid => 1000,
+        EnemyKind::Enforcer => 150,
+        _ => 1,
+    }
+}
+
+fn projectile_score(kind: ProjectileKind) -> u32 {
+    match kind {
+        ProjectileKind::EnforcerSpark => 25,
+        _ => 0,
+    }
 }
