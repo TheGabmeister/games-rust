@@ -1,10 +1,10 @@
-use macroquad::prelude::*;
-use crate::constants::*;
-use crate::world::Camera;
-use crate::terrain::Terrain;
-use crate::player::Player;
-use crate::enemies::Enemy;
 use crate::astronauts::{Astronaut, AstronautState};
+use crate::constants::*;
+use crate::enemies::Enemy;
+use crate::player::Player;
+use crate::terrain::Terrain;
+use crate::world::Camera;
+use macroquad::prelude::*;
 
 pub struct Scanner;
 
@@ -39,22 +39,42 @@ impl Scanner {
         let vp_scanner_w = vp_world_w * scale;
         let vp_scanner_x = camera.x * scale;
         // Clamp draw so it doesn't bleed off the scanner at wrap boundary
-        draw_rectangle_lines(vp_scanner_x % sw, 1.0, vp_scanner_w, sh - 2.0, 1.0,
-                             Color::new(0.6, 0.6, 0.6, 0.5));
+        draw_rectangle_lines(
+            vp_scanner_x % sw,
+            1.0,
+            vp_scanner_w,
+            sh - 2.0,
+            1.0,
+            Color::new(0.6, 0.6, 0.6, 0.5),
+        );
 
         // Enemy dots (red)
         for e in enemies.iter().filter(|e| e.alive) {
             let ex = (e.pos.x * scale) % sw;
             let ey = sh * 0.35;
-            draw_rectangle(ex - 1.5, ey - 1.5, 3.0, 3.0, Color::new(1.0, 0.15, 0.15, 1.0));
+            draw_rectangle(
+                ex - 1.5,
+                ey - 1.5,
+                3.0,
+                3.0,
+                Color::new(1.0, 0.15, 0.15, 1.0),
+            );
         }
 
         // Astronaut dots (green)
         for a in astronauts.iter().filter(|a| a.alive) {
-            if matches!(a.state, AstronautState::Safe) { continue; }
+            if matches!(a.state, AstronautState::Safe) {
+                continue;
+            }
             let ax = (a.pos.x * scale) % sw;
             let ay = sh * 0.78;
-            draw_rectangle(ax - 1.5, ay - 1.5, 3.0, 3.0, Color::new(0.15, 1.0, 0.15, 1.0));
+            draw_rectangle(
+                ax - 1.5,
+                ay - 1.5,
+                3.0,
+                3.0,
+                Color::new(0.15, 1.0, 0.15, 1.0),
+            );
         }
 
         // Player (white, larger)

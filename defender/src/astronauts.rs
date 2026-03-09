@@ -1,12 +1,12 @@
-use macroquad::prelude::*;
 use crate::constants::*;
-use crate::world::Camera;
 use crate::terrain::Terrain;
+use crate::world::Camera;
+use macroquad::prelude::*;
 
 #[derive(Clone)]
 pub enum AstronautState {
     OnGround,
-    BeingCarried { by_enemy_id: u32 },
+    BeingCarried { _by_enemy_id: u32 },
     Falling { vel_y: f32 },
     Safe, // caught and deposited, or safely on ground after fall
 }
@@ -71,7 +71,7 @@ impl Astronaut {
 
         let color = match &self.state {
             AstronautState::BeingCarried { .. } => Color::new(1.0, 1.0, 0.3, 1.0), // yellow when carried
-            AstronautState::Falling { .. } => Color::new(0.3, 1.0, 0.5, 1.0),      // bright when falling
+            AstronautState::Falling { .. } => Color::new(0.3, 1.0, 0.5, 1.0), // bright when falling
             _ => Color::new(0.2, 0.9, 0.2, 1.0),
         };
 

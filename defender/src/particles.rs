@@ -1,6 +1,6 @@
-use macroquad::prelude::*;
 use crate::constants::SCANNER_HEIGHT;
 use crate::world::Camera;
+use macroquad::prelude::*;
 
 enum ParticleKind {
     Spark { color: Color },
@@ -9,7 +9,7 @@ enum ParticleKind {
 }
 
 struct Particle {
-    pub pos: Vec2,     // world-space for sparks, screen-space for flash
+    pub pos: Vec2, // world-space for sparks, screen-space for flash
     pub vel: Vec2,
     kind: ParticleKind,
     pub lifetime: f32,
@@ -22,14 +22,15 @@ pub struct ParticleSystem {
 
 impl ParticleSystem {
     pub fn new() -> Self {
-        ParticleSystem { particles: Vec::new() }
+        ParticleSystem {
+            particles: Vec::new(),
+        }
     }
 
     pub fn spawn_explosion(&mut self, world_pos: Vec2, color: Color, count: usize) {
         use std::f32::consts::TAU;
         for i in 0..count {
-            let angle = (i as f32 / count as f32) * TAU
-                + macroquad::rand::gen_range(-0.3f32, 0.3);
+            let angle = (i as f32 / count as f32) * TAU + macroquad::rand::gen_range(-0.3f32, 0.3);
             let speed = macroquad::rand::gen_range(60.0f32, 200.0);
             let life = macroquad::rand::gen_range(0.3f32, 0.9);
             self.particles.push(Particle {
@@ -56,7 +57,9 @@ impl ParticleSystem {
         self.particles.push(Particle {
             pos: world_pos,
             vel: Vec2::new(0.0, -35.0),
-            kind: ParticleKind::ScoreText { text: format!("+{}", score) },
+            kind: ParticleKind::ScoreText {
+                text: format!("+{}", score),
+            },
             lifetime: 1.0,
             max_lifetime: 1.0,
         });

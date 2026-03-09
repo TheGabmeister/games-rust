@@ -1,6 +1,6 @@
-use macroquad::prelude::*;
 use crate::constants::*;
 use crate::world::Camera;
+use macroquad::prelude::*;
 
 pub struct Terrain {
     /// Height of terrain surface from the bottom of the play area, per segment.
@@ -39,7 +39,10 @@ impl Terrain {
             smoothed[i] = (heights[i] * 2.0 + prev + next) / 4.0;
         }
 
-        Terrain { heights: smoothed, segment_width }
+        Terrain {
+            heights: smoothed,
+            segment_width,
+        }
     }
 
     /// World-space y coordinate of the terrain surface at a given world x.

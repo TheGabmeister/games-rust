@@ -1,5 +1,5 @@
-use macroquad::prelude::*;
 use crate::constants::*;
+use macroquad::prelude::*;
 
 pub struct Camera {
     /// x-position in world space of the LEFT edge of the viewport
@@ -16,7 +16,7 @@ impl Camera {
         self.x = (player_world_x - screen_width() / 2.0).rem_euclid(WORLD_WIDTH);
     }
 
-    /// Convert world x → screen x, handling wrap-around.
+    /// Convert world x to screen x, handling wrap-around.
     pub fn world_to_screen_x(&self, world_x: f32) -> f32 {
         let mut dx = world_x - self.x;
         // Bring dx into the range [-WORLD_WIDTH/2, WORLD_WIDTH/2]
@@ -29,14 +29,9 @@ impl Camera {
         dx
     }
 
-    /// Convert world y → screen y (offset by scanner strip height).
+    /// Convert world y to screen y (offset by scanner strip height).
     pub fn world_to_screen_y(&self, world_y: f32) -> f32 {
         world_y + SCANNER_HEIGHT
-    }
-
-    /// Convert screen x → world x.
-    pub fn screen_to_world_x(&self, screen_x: f32) -> f32 {
-        (self.x + screen_x).rem_euclid(WORLD_WIDTH)
     }
 
     /// Returns true if the world-space point (with given half-width) is visible on screen.

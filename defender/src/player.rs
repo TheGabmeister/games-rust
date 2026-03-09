@@ -1,7 +1,7 @@
-use macroquad::prelude::*;
 use crate::constants::*;
-use crate::world::Camera;
 use crate::terrain::Terrain;
+use crate::world::Camera;
+use macroquad::prelude::*;
 
 #[derive(Clone, Copy, PartialEq)]
 pub enum FacingDir {
@@ -9,10 +9,16 @@ pub enum FacingDir {
     Right,
 }
 
-pub enum PlayerAction {
-    FireBullet { pos: Vec2, vel: Vec2 },
-    SmartBomb,
-    Hyperspace,
+pub struct FireCommand {
+    pub pos: Vec2,
+    pub vel: Vec2,
+}
+
+#[derive(Default)]
+pub struct PlayerCommands {
+    pub fire: Option<FireCommand>,
+    pub smart_bomb: bool,
+    pub hyperspace: bool,
 }
 
 pub struct Player {
@@ -44,12 +50,12 @@ impl Player {
         }
     }
 
-    /// Update player state and return queued actions.
-    pub fn update(&mut self, dt: f32, terrain: &Terrain) -> Vec<PlayerAction> {
-        let mut actions = Vec::new();
+    /// Update player state and return player commands for this frame.
+    pub fn update(&mut self, dt: f32, terrain: &Terrain) -> PlayerCommands {
+        let mut commands = PlayerCommands::default();
 
         if !self.alive {
-            return actions;
+            return commands;
         }
 
         if self.fire_cooldown > 0.0 {
@@ -109,7 +115,7 @@ impl Player {
                 FacingDir::Right => PLAYER_HALF_W + 2.0,
                 FacingDir::Left => -(PLAYER_HALF_W + 2.0),
             };
-            actions.push(PlayerAction::FireBullet {
+            commands.fire = Some(FireCommand {
                 pos: Vec2::new(
                     (self.pos.x + nose_offset).rem_euclid(WORLD_WIDTH),
                     self.pos.y,
@@ -121,15 +127,15 @@ impl Player {
         // --- Smart bomb ---
         if is_key_pressed(KeyCode::X) && self.smart_bombs > 0 {
             self.smart_bombs -= 1;
-            actions.push(PlayerAction::SmartBomb);
+            commands.smart_bomb = true;
         }
 
         // --- Hyperspace ---
         if is_key_pressed(KeyCode::C) || is_key_pressed(KeyCode::LeftShift) {
-            actions.push(PlayerAction::Hyperspace);
+            commands.hyperspace = true;
         }
 
-        actions
+        commands
     }
 
     pub fn aabb(&self) -> Rect {
@@ -151,7 +157,7 @@ impl Player {
 
         // Blink when invincible
         if self.invincible_timer > 0.0 {
-            let blink = (self.invincible_timer * 10.0) as u32 % 2 == 0;
+            let blink = ((self.invincible_timer * 10.0) as u32).is_multiple_of(2);
             if blink {
                 return;
             }

@@ -1,5 +1,5 @@
-use macroquad::prelude::Rect;
 use crate::constants::WORLD_WIDTH;
+use macroquad::prelude::Rect;
 
 /// Basic AABB overlap test.
 pub fn aabb_overlap(a: Rect, b: Rect) -> bool {

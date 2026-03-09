@@ -1,6 +1,6 @@
-use macroquad::prelude::*;
 use crate::constants::*;
 use crate::world::Camera;
+use macroquad::prelude::*;
 
 #[derive(Clone, Copy, PartialEq)]
 pub enum BulletOwner {

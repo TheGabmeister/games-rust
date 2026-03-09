@@ -1,21 +1,21 @@
 use macroquad::prelude::*;
 
-mod constants;
-mod world;
-mod terrain;
-mod player;
-mod enemies;
 mod astronauts;
-mod bullets;
-mod particles;
-mod scanner;
-mod collision;
-mod scoring;
 mod audio;
+mod bullets;
+mod collision;
+mod constants;
+mod enemies;
 mod game;
+mod particles;
+mod player;
+mod scanner;
+mod scoring;
+mod terrain;
+mod world;
 
-use game::Game;
 use constants::MAX_DT;
+use game::Game;
 
 fn window_conf() -> Conf {
     Conf {
