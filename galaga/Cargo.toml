@@ -1,0 +1,9 @@
+[package]
+name = "galaga"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+macroquad = "0.4.14"
+hecs = "0.11.0"
+rand = { version = "0.8.5", features = ["small_rng"] }
