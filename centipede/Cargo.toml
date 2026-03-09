@@ -1,0 +1,8 @@
+[package]
+name = "centipede"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+macroquad = { version = "0.4.14", features = ["audio"] }
+rand = { version = "0.8.5", features = ["small_rng"] }
