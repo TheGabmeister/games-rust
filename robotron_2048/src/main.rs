@@ -57,6 +57,9 @@ async fn main() {
             res.debug_enabled = !res.debug_enabled;
         }
 
+        // min(MAX_FRAME_TIME) caps the value to prevents physics/game logic from "exploding" 
+        // if a frame takes unusually long (e.g., window is minimized, a debugger pauses execution, lag spike occurs). 
+        // Without cap, a 2-second freeze could cause entities to teleport huge distances, clip through walls.
         let frame_dt = get_frame_time().min(MAX_FRAME_TIME);
 
         match res.state {
