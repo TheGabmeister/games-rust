@@ -1,6 +1,6 @@
 use hecs::World;
 
-use crate::audio::{MusicManager, SfxManager};
+use crate::audio::SfxManager;
 use crate::assets::load_all_assets;
 use crate::events::GameEvent;
 use crate::prefabs;
@@ -11,7 +11,6 @@ pub struct Game {
     world: World,
     res: Resources,
     sfx_manager: SfxManager,
-    music_manager: MusicManager,
 }
 
 impl Game {
@@ -32,13 +31,11 @@ impl Game {
         // GameStarted event triggers music in system_process_events (first update tick)
         res.events.emit(GameEvent::GameStarted);
         let sfx_manager = SfxManager::new();
-        let music_manager = MusicManager::new();
 
         Self {
             world,
             res,
             sfx_manager,
-            music_manager,
         }
     }
 
@@ -66,7 +63,7 @@ impl Game {
         // 6. React to events (health, score, despawns, re-emits)
         systems::system_process_events(&mut self.world, &mut self.res);
 
-        // 8. Debug toggle
+        // 7. Debug toggle
         if self.res.input.debug_toggle_pressed {
             self.res.debug_mode = !self.res.debug_mode;
         }

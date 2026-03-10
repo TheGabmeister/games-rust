@@ -214,7 +214,7 @@ pub fn system_process_events(world: &mut World, res: &mut Resources) {
             }
 
             GameEvent::GameStarted => {
-                res.play_music(MusicId::Spaceshooter);
+                res.music_manager.play_music(MusicId::Spaceshooter);
             }
 
             _ => {}
