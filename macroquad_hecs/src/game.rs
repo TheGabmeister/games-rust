@@ -43,10 +43,7 @@ impl Game {
         spawn_initial_wave(&mut world);
         res.events.emit(GameEvent::GameStarted);
 
-        Self {
-            world,
-            res,
-        }
+        Self { world, res }
     }
 
     /// Fixed-timestep update (called at 60 Hz).
@@ -86,7 +83,7 @@ impl Game {
 
     /// Render (called every frame — not fixed-timestep).
     pub fn draw(&self) {
-        render::draw(&self.world, &self.res.textures);
+        render::draw(&self.world, &self.res.assets);
 
         #[cfg(debug_assertions)]
         if self.res.director.debug_mode {

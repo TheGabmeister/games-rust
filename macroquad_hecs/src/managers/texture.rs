@@ -1,7 +1,10 @@
-use std::collections::HashMap;
-use macroquad::prelude::Texture2D;
 use crate::components::TextureId;
-use super::TextureManager;
+use macroquad::prelude::Texture2D;
+use std::collections::HashMap;
+
+pub struct TextureManager {
+    textures: HashMap<TextureId, Texture2D>,
+}
 
 impl TextureManager {
     pub fn new(textures: HashMap<TextureId, Texture2D>) -> Self {

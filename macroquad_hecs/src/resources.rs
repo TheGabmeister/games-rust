@@ -1,7 +1,7 @@
 use macroquad::prelude::Vec2;
 
 use crate::events::EventBus;
-use crate::managers::{GameDirector, LoadedAssets, MusicManager, SfxManager, TextureManager};
+use crate::managers::{Assets, GameDirector, MusicManager, SfxManager};
 
 // ---------------------------------------------------------------------------
 // Resources root — grouped by domain to avoid god-object growth.
@@ -17,13 +17,17 @@ pub struct Resources {
 }
 
 impl Resources {
-    pub fn new() -> Self {
-        assets: Assets::new(),
-        sfx: SfxManager::new(),
-        music: MusicManager::new(),
-        director: GameDirector::default(),
-        input: InputState::default(),
-        events: EventBus::default(),
+    pub fn new(assets: Assets) -> Self {
+        let sfx = SfxManager::new(&assets);
+        let music = MusicManager::new(&assets);
+        Self {
+            assets,
+            sfx,
+            music,
+            director: GameDirector::default(),
+            input: InputState::default(),
+            events: EventBus::default(),
+        }
     }
 }
 

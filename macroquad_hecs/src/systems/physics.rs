@@ -3,7 +3,9 @@ use std::cell::RefCell;
 use hecs::{Entity, World};
 use macroquad::prelude::*;
 
-use crate::components::{ActivePowerup, BoxCollider, CircleCollider, CollisionLayer, Enemy, Pickup, Transform};
+use crate::components::{
+    ActivePowerup, BoxCollider, CircleCollider, CollisionLayer, Enemy, Pickup, Transform,
+};
 use crate::constants::*;
 use crate::events::{EventBus, GameEvent};
 
@@ -100,8 +102,7 @@ pub fn system_collision(world: &mut World, events: &mut EventBus) {
             for j in (i + 1)..aabbs.len() {
                 let a = &aabbs[i];
                 let b = &aabbs[j];
-                if layers_interact(a.layer, b.layer)
-                    && aabb_overlaps(a.pos, a.half, b.pos, b.half)
+                if layers_interact(a.layer, b.layer) && aabb_overlaps(a.pos, a.half, b.pos, b.half)
                 {
                     emit_event(a.entity, a.layer, b.entity, b.layer, world, events);
                 }
@@ -160,11 +161,17 @@ fn emit_event(
 
     if a_is_player_bullet && b_is_enemy {
         if let Ok(enemy) = world.get::<&Enemy>(eb) {
-            events.emit(GameEvent::EnemyDestroyed { entity: eb, kind: enemy.kind });
+            events.emit(GameEvent::EnemyDestroyed {
+                entity: eb,
+                kind: enemy.kind,
+            });
         }
     } else if b_is_player_bullet && a_is_enemy {
         if let Ok(enemy) = world.get::<&Enemy>(ea) {
-            events.emit(GameEvent::EnemyDestroyed { entity: ea, kind: enemy.kind });
+            events.emit(GameEvent::EnemyDestroyed {
+                entity: ea,
+                kind: enemy.kind,
+            });
         }
     } else if a_is_enemy_bullet && b_is_player {
         events.emit(GameEvent::PlayerHit { source: ea });

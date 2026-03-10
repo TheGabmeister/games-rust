@@ -3,7 +3,7 @@ use macroquad::prelude::*;
 
 use crate::components::{DrawLayer, Sprite, TextureId, Transform};
 use crate::constants::{SCREEN_HEIGHT, SCREEN_WIDTH};
-use crate::managers::{GameDirector, Assets};
+use crate::managers::{Assets, GameDirector};
 use crate::resources::GameState;
 
 /// Draw all entities that have Transform + Sprite + DrawLayer, sorted back-to-front.
@@ -15,7 +15,13 @@ pub fn draw(world: &World, assets: &Assets) {
         .query::<(&DrawLayer, &Transform, &Sprite)>()
         .iter()
         .map(|(layer, transform, sprite)| {
-            (*layer, transform.pos, transform.rot, sprite.texture, sprite.tint)
+            (
+                *layer,
+                transform.pos,
+                transform.rot,
+                sprite.texture,
+                sprite.tint,
+            )
         })
         .collect();
 

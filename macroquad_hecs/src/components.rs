@@ -12,7 +12,10 @@ pub struct Transform {
 
 impl Transform {
     pub fn at(x: f32, y: f32) -> Self {
-        Self { pos: vec2(x, y), rot: 0.0 }
+        Self {
+            pos: vec2(x, y),
+            rot: 0.0,
+        }
     }
 }
 
@@ -42,7 +45,9 @@ pub struct BoxCollider {
 
 impl BoxCollider {
     pub fn new(w: f32, h: f32) -> Self {
-        Self { half: vec2(w * 0.5, h * 0.5) }
+        Self {
+            half: vec2(w * 0.5, h * 0.5),
+        }
     }
 }
 
@@ -91,7 +96,10 @@ pub struct Sprite {
 
 impl Sprite {
     pub fn new(texture: TextureId) -> Self {
-        Self { texture, tint: WHITE }
+        Self {
+            texture,
+            tint: WHITE,
+        }
     }
     pub fn tinted(texture: TextureId, tint: Color) -> Self {
         Self { texture, tint }
@@ -137,14 +145,18 @@ impl Lifetime {
 /// Controls firing rate.
 #[derive(Clone, Copy, Debug)]
 pub struct Weapon {
-    pub cooldown: f32,      // seconds between shots
-    pub timer: f32,         // counts down; fires when <= 0
+    pub cooldown: f32, // seconds between shots
+    pub timer: f32,    // counts down; fires when <= 0
     pub bullet_speed: f32,
 }
 
 impl Weapon {
     pub fn new(cooldown: f32, bullet_speed: f32) -> Self {
-        Self { cooldown, timer: 0.0, bullet_speed }
+        Self {
+            cooldown,
+            timer: 0.0,
+            bullet_speed,
+        }
     }
 }
 

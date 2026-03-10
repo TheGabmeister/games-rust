@@ -25,7 +25,6 @@ pub fn system_process_events(
 
     while let Some(event) = events.pop_front() {
         match event {
-
             GameEvent::PlayerHit { source } => {
                 if !player_died_this_tick {
                     events.push_back(GameEvent::PlayerDied);

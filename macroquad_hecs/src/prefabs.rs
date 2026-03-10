@@ -30,14 +30,25 @@ pub fn spawn_player(world: &mut World) -> Entity {
 
 pub fn spawn_enemy(world: &mut World, kind: EnemyKind, pos: Vec2) -> Entity {
     let (texture, speed, score) = match kind {
-        EnemyKind::Black => (TextureId::EnemyShipBlack, ENEMY_SPEED_BLACK, SCORE_ENEMY_BLACK),
+        EnemyKind::Black => (
+            TextureId::EnemyShipBlack,
+            ENEMY_SPEED_BLACK,
+            SCORE_ENEMY_BLACK,
+        ),
         EnemyKind::Blue => (TextureId::EnemyShipBlue, ENEMY_SPEED_BLUE, SCORE_ENEMY_BLUE),
-        EnemyKind::Green => (TextureId::EnemyShipGreen, ENEMY_SPEED_GREEN, SCORE_ENEMY_GREEN),
+        EnemyKind::Green => (
+            TextureId::EnemyShipGreen,
+            ENEMY_SPEED_GREEN,
+            SCORE_ENEMY_GREEN,
+        ),
         EnemyKind::Red => (TextureId::EnemyShipRed, ENEMY_SPEED_RED, SCORE_ENEMY_RED),
     };
 
     world.spawn((
-        Transform { pos, rot: std::f32::consts::PI }, // facing down
+        Transform {
+            pos,
+            rot: std::f32::consts::PI,
+        }, // facing down
         Velocity::new(0.0, speed),
         Sprite::new(texture),
         BoxCollider::new(32.0, 32.0),
@@ -66,7 +77,9 @@ pub fn spawn_player_bullet(world: &mut World, pos: Vec2, speed: f32) -> Entity {
             member: LAYER_PLAYER_BULLET,
             mask: LAYER_ENEMY,
         },
-        Bullet { owner: BulletOwner::Player },
+        Bullet {
+            owner: BulletOwner::Player,
+        },
         Lifetime::new(BULLET_LIFETIME),
         DrawLayer(DRAW_BULLET),
     ))
@@ -82,7 +95,9 @@ pub fn spawn_enemy_bullet(world: &mut World, pos: Vec2, speed: f32) -> Entity {
             member: LAYER_ENEMY_BULLET,
             mask: LAYER_PLAYER,
         },
-        Bullet { owner: BulletOwner::Enemy },
+        Bullet {
+            owner: BulletOwner::Enemy,
+        },
         Lifetime::new(BULLET_LIFETIME),
         DrawLayer(DRAW_BULLET),
     ))
@@ -131,7 +146,10 @@ pub fn spawn_powerup(world: &mut World, effect: PowerupEffect, pos: Vec2) -> Ent
             member: LAYER_PICKUP,
             mask: LAYER_PLAYER,
         },
-        ActivePowerup { effect, duration: 5.0 },
+        ActivePowerup {
+            effect,
+            duration: 5.0,
+        },
         DrawLayer(DRAW_PICKUP),
     ))
 }
