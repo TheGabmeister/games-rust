@@ -5,6 +5,7 @@ use macroquad::prelude::{Texture2D, Vec2};
 use crate::assets::LoadedAssets;
 use crate::audio::{MusicManager, SfxManager};
 use crate::components::TextureId;
+use crate::constants::PLAYER_START_LIVES;
 use crate::events::EventBus;
 
 // ---------------------------------------------------------------------------
@@ -38,7 +39,7 @@ impl Resources {
             sfx_manager: SfxManager::new(assets.sfx),
             music_manager: MusicManager::new(assets.music),
             score: 0,
-            lives: 3,
+            lives: PLAYER_START_LIVES,
             high_score: 0,
             debug_mode: false,
             input: InputState::default(),
@@ -51,6 +52,14 @@ impl Resources {
         self.textures
             .get(&id)
             .unwrap_or_else(|| panic!("Texture {id:?} not loaded"))
+    }
+
+    pub fn add_score(&mut self, points: u32) {
+        self.score = self.score.saturating_add(points);
+    }
+
+    pub fn add_lives_clamped(&mut self, amount: u32, max_lives: u32) {
+        self.lives = self.lives.saturating_add(amount).min(max_lives);
     }
 }
 

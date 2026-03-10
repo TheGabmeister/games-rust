@@ -147,24 +147,12 @@ pub fn system_cull_offscreen(world: &mut World) {
 // ---------------------------------------------------------------------------
 
 pub fn system_process_events(world: &mut World, res: &mut Resources) {
-    const MAX_EVENTS_PER_TICK: usize = 1024;
-
     let mut events: VecDeque<GameEvent> = res.events.drain().into();
     let mut to_despawn: HashSet<Entity> = HashSet::new();
     let mut player_died_this_tick = false;
     let mut reset_requested = false;
-    let mut processed_events = 0_usize;
 
     while let Some(event) = events.pop_front() {
-        processed_events += 1;
-        if processed_events > MAX_EVENTS_PER_TICK {
-            #[cfg(debug_assertions)]
-            eprintln!(
-                "system_process_events: exceeded MAX_EVENTS_PER_TICK={MAX_EVENTS_PER_TICK}, dropping remaining events this tick"
-            );
-            break;
-        }
-
         match event {
             GameEvent::BulletHitEnemy { bullet, enemy } => {
                 to_despawn.insert(bullet);
@@ -186,14 +174,7 @@ pub fn system_process_events(world: &mut World, res: &mut Resources) {
 
             GameEvent::PickupCollected { entity, kind } => {
                 to_despawn.insert(entity);
-                match kind {
-                    PickupKind::Life => {
-                        res.lives = (res.lives + 1).min(5);
-                    }
-                    PickupKind::Star => {
-                        res.score += 500;
-                    }
-                }
+                apply_pickup_reward(res, kind);
                 
             }
 
@@ -261,7 +242,7 @@ fn apply_damage_to_enemy(
 
     res.sfx_manager.play_sound(SfxId::EnemyDestroyed);
     res.events.emit(GameEvent::EnemyDestroyed { entity: enemy, kind });
-    res.score += score;
+    res.add_score(score);
     to_despawn.insert(enemy);
 }
 
@@ -280,5 +261,12 @@ fn apply_damage_to_player(
         res.events.emit(GameEvent::PlayerDied);
         res.sfx_manager.play_sound(SfxId::PlayerDied);
         *player_died_this_tick = true;
+    }
+}
+
+fn apply_pickup_reward(res: &mut Resources, kind: PickupKind) {
+    match kind {
+        PickupKind::Life => res.add_lives_clamped(1, PLAYER_MAX_LIVES),
+        PickupKind::Star => res.add_score(SCORE_PICKUP_STAR),
     }
 }

@@ -50,6 +50,13 @@ pub const SCORE_ENEMY_BLACK: u32 = 100;
 pub const SCORE_ENEMY_BLUE: u32 = 150;
 pub const SCORE_ENEMY_GREEN: u32 = 75;
 pub const SCORE_ENEMY_RED: u32 = 200;
+pub const SCORE_PICKUP_STAR: u32 = 500;
+
+// ---------------------------------------------------------------------------
+// Player state
+// ---------------------------------------------------------------------------
+pub const PLAYER_START_LIVES: u32 = 3;
+pub const PLAYER_MAX_LIVES: u32 = 5;
 
 // ---------------------------------------------------------------------------
 // Bullet
