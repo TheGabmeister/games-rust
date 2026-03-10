@@ -3,6 +3,7 @@
 
 mod components;
 mod constants;
+mod asset_manifest;
 mod events;
 mod game;
 mod managers;

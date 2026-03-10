@@ -7,7 +7,7 @@ use crate::components::TextureId;
 use crate::constants::ASSETS_DIR;
 use crate::events::{MusicId, SfxId};
 
-use super::asset_manifest::{MUSIC, SFX, TEXTURES};
+use crate::asset_manifest::{MUSIC, SFX, TEXTURES};
 
 pub struct Assets {
     textures: HashMap<TextureId, Texture2D>,

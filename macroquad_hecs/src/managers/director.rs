@@ -39,4 +39,9 @@ impl GameDirector {
     pub fn add_lives_clamped(&mut self, amount: u32, max_lives: u32) {
         self.lives = self.lives.saturating_add(amount).min(max_lives);
     }
+
+    pub fn on_player_died(&mut self)
+    {
+        
+    }
 }

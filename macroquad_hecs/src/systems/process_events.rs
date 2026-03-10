@@ -14,7 +14,7 @@ use crate::resources::GameState;
 
 pub fn system_process_events(
     world: &mut World,
-    state: &mut GameDirector,
+    director: &mut GameDirector,
     events_bus: &mut EventBus,
     sfx: &mut SfxManager,
     music: &mut MusicManager,
@@ -25,22 +25,12 @@ pub fn system_process_events(
 
     while let Some(event) = events.pop_front() {
         match event {
-            GameEvent::PlayerHit { source } => {
-                if !player_died_this_tick {
-                    events.push_back(GameEvent::PlayerDied);
-                    sfx.play_sound(SfxId::PlayerDied);
-                    player_died_this_tick = true;
-                }
-                if world.get::<&Bullet>(source).is_ok() || world.get::<&Enemy>(source).is_ok() {
-                    to_despawn.insert(source);
-                }
-            }
 
             GameEvent::EnemyDestroyed { .. } => {}
 
             GameEvent::PickupCollected { entity, kind } => {
                 to_despawn.insert(entity);
-                apply_pickup_reward(state, kind);
+                apply_pickup_reward(director, kind);
             }
 
             GameEvent::PowerupCollected { entity, effect } => {
@@ -50,17 +40,7 @@ pub fn system_process_events(
             }
 
             GameEvent::PlayerDied => {
-                if state.state != GameState::Playing {
-                    continue;
-                }
-
-                if state.lives > 1 {
-                    state.lives -= 1;
-                } else if state.lives == 1 {
-                    state.lives = 0;
-                    state.state = GameState::Lost;
-                    state.update_high_score();
-                }
+                director.on_player_died();
             }
 
             GameEvent::GameStarted => {
@@ -69,22 +49,22 @@ pub fn system_process_events(
 
             GameEvent::PlayerCaptured { boss: _ } => {}
             GameEvent::StageCleared => {
-                if state.state == GameState::Playing {
-                    state.state = GameState::Won;
-                    state.update_high_score();
+                if director.state == GameState::Playing {
+                    director.state = GameState::Won;
+                    director.update_high_score();
                 }
             }
         }
     }
 
-    if state.state == GameState::Playing && !has_enemies(world) {
+    if director.state == GameState::Playing && !has_enemies(world) {
         events.push_back(GameEvent::StageCleared);
     }
 
     while let Some(event) = events.pop_front() {
         if let GameEvent::StageCleared = event {
-            state.state = GameState::Won;
-            state.update_high_score();
+            director.state = GameState::Won;
+            director.update_high_score();
         }
     }
 

@@ -1,4 +1,3 @@
-mod asset_manifest;
 mod assets;
 mod director;
 mod music;
