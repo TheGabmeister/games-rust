@@ -3,7 +3,7 @@ use std::collections::{HashSet, VecDeque};
 use hecs::{Entity, World};
 
 use crate::audio::{MusicManager, SfxManager};
-use crate::components::{Bullet, Enemy, PickupKind, Player, ScoreValue};
+use crate::components::{Bullet, Enemy, PickupKind, ScoreValue};
 use crate::constants::{PLAYER_MAX_LIVES, SCORE_PICKUP_STAR};
 use crate::events::{EventBus, GameEvent, MusicId, SfxId};
 use crate::resources::{GamePhase, GameState};
@@ -27,11 +27,30 @@ pub fn system_process_events(
         match event {
             GameEvent::EnemyHit { bullet, enemy } => {
                 to_despawn.insert(bullet);
-                apply_damage_to_enemy(world, state, &mut events, sfx, enemy, &mut to_despawn);
+
+                // One-hit kill: enemy is destroyed immediately on hit.
+                if !to_despawn.contains(&enemy) {
+                    if let Ok(enemy_data) = world.get::<&Enemy>(enemy) {
+                        let kind = enemy_data.kind;
+                        let score = world.get::<&ScoreValue>(enemy).ok().map(|s| s.0).unwrap_or(0);
+
+                        sfx.play_sound(SfxId::EnemyDestroyed);
+                        events.push_back(GameEvent::EnemyDestroyed {
+                            entity: enemy,
+                            kind,
+                        });
+                        state.add_score(score);
+                        to_despawn.insert(enemy);
+                    }
+                }
             }
 
             GameEvent::PlayerHit { source } => {
-                apply_damage_to_player(world, &mut events, sfx, &mut player_died_this_tick);
+                if !player_died_this_tick {
+                    events.push_back(GameEvent::PlayerDied);
+                    sfx.play_sound(SfxId::PlayerDied);
+                    player_died_this_tick = true;
+                }
                 if world.get::<&Bullet>(source).is_ok() || world.get::<&Enemy>(source).is_ok() {
                     to_despawn.insert(source);
                 }
@@ -97,54 +116,6 @@ pub fn system_process_events(
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-fn apply_damage_to_enemy(
-    world: &mut World,
-    state: &mut GameState,
-    events: &mut VecDeque<GameEvent>,
-    sfx: &SfxManager,
-    enemy: Entity,
-    to_despawn: &mut HashSet<Entity>,
-) {
-    // Ignore duplicate hit events for enemies already marked for despawn this tick.
-    if to_despawn.contains(&enemy) {
-        return;
-    }
-
-    // One-hit kill: any hit destroys entities that are actual Enemy actors.
-    let kind = match world.get::<&Enemy>(enemy) {
-        Ok(enemy_data) => enemy_data.kind,
-        Err(_) => return,
-    };
-    let score = world.get::<&ScoreValue>(enemy).ok().map(|s| s.0).unwrap_or(0);
-
-    sfx.play_sound(SfxId::EnemyDestroyed);
-    events.push_back(GameEvent::EnemyDestroyed {
-        entity: enemy,
-        kind,
-    });
-    state.add_score(score);
-    to_despawn.insert(enemy);
-}
-
-fn apply_damage_to_player(
-    world: &mut World,
-    events: &mut VecDeque<GameEvent>,
-    sfx: &SfxManager,
-    player_died_this_tick: &mut bool,
-) {
-    if *player_died_this_tick {
-        return;
-    }
-
-    // One-hit kill: if a player exists, this hit kills them.
-    let player_exists = world.query::<&Player>().iter().next().is_some();
-    if player_exists {
-        events.push_back(GameEvent::PlayerDied);
-        sfx.play_sound(SfxId::PlayerDied);
-        *player_died_this_tick = true;
-    }
-}
 
 fn has_enemies(world: &World) -> bool {
     world.query::<&Enemy>().iter().next().is_some()
