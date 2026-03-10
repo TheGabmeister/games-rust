@@ -5,3 +5,54 @@ pub const FIXED_DT: f32 = 1.0 / 60.0;
 pub const MAX_FRAME_TIME: f32 = 0.25;
 
 pub const ASSETS_DIR: &str = "assets";
+
+// ---------------------------------------------------------------------------
+// Collision layers (bitmask)
+// ---------------------------------------------------------------------------
+pub const LAYER_PLAYER: u32 = 1 << 0;
+pub const LAYER_PLAYER_BULLET: u32 = 1 << 1;
+pub const LAYER_ENEMY: u32 = 1 << 2;
+pub const LAYER_ENEMY_BULLET: u32 = 1 << 3;
+pub const LAYER_PICKUP: u32 = 1 << 4;
+
+// ---------------------------------------------------------------------------
+// Draw layers (lower = drawn first = behind)
+// ---------------------------------------------------------------------------
+pub const DRAW_BACKGROUND: u8 = 0;
+pub const DRAW_PICKUP: u8 = 10;
+pub const DRAW_ENEMY: u8 = 20;
+pub const DRAW_PLAYER: u8 = 30;
+pub const DRAW_BULLET: u8 = 40;
+pub const DRAW_EFFECT: u8 = 50;
+pub const DRAW_UI: u8 = 100;
+
+// ---------------------------------------------------------------------------
+// Player tuning
+// ---------------------------------------------------------------------------
+pub const PLAYER_SPEED: f32 = 200.0;
+pub const PLAYER_FIRE_RATE: f32 = 0.15;
+pub const PLAYER_BULLET_SPEED: f32 = 500.0;
+pub const PLAYER_MAX_HP: i32 = 3;
+
+// ---------------------------------------------------------------------------
+// Enemy tuning
+// ---------------------------------------------------------------------------
+pub const ENEMY_SPEED_BLACK: f32 = 80.0;
+pub const ENEMY_SPEED_BLUE: f32 = 120.0;
+pub const ENEMY_SPEED_GREEN: f32 = 60.0;
+pub const ENEMY_SPEED_RED: f32 = 150.0;
+pub const ENEMY_FIRE_RATE: f32 = 1.5;
+pub const ENEMY_BULLET_SPEED: f32 = 250.0;
+
+// ---------------------------------------------------------------------------
+// Score
+// ---------------------------------------------------------------------------
+pub const SCORE_ENEMY_BLACK: u32 = 100;
+pub const SCORE_ENEMY_BLUE: u32 = 150;
+pub const SCORE_ENEMY_GREEN: u32 = 75;
+pub const SCORE_ENEMY_RED: u32 = 200;
+
+// ---------------------------------------------------------------------------
+// Bullet
+// ---------------------------------------------------------------------------
+pub const BULLET_LIFETIME: f32 = 2.0;

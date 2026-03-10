@@ -1,22 +1,44 @@
 use hecs::Entity;
-use macroquad::prelude::*;
 
-use crate::components::{EnemyKind};
+use crate::components::{EnemyKind, PickupKind, PowerupEffect};
+
+// ---------------------------------------------------------------------------
+// Sound IDs — placed here so event handling and audio are in one import.
+// ---------------------------------------------------------------------------
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum SoundId {
+    PlayerLaser,
+    PlayerDied,
+    PlayerPowerup,
+    EnemyLaser,
+    EnemyDestroyed,
+    MusicSpaceshooter,
+}
+
+// ---------------------------------------------------------------------------
+// Game events
+// ---------------------------------------------------------------------------
 
 #[derive(Clone, Debug)]
 pub enum GameEvent {
     GameStarted,
     PlayerDied,
-    EnemyDestroyed {
-        entity: Entity,
-        kind: EnemyKind,
-    },
     PlayerHit,
-    PlayerCaptured {
-        boss: Entity,
-    },
+    PlayerCaptured { boss: Entity },
+    EnemyDestroyed { entity: Entity, kind: EnemyKind },
+    /// Raw collision event — system_process_events looks up the Pickup component.
+    PickupTouched { pickup: Entity },
+    PickupCollected { entity: Entity, kind: PickupKind },
+    PowerupCollected { entity: Entity, effect: PowerupEffect },
+    BulletHitEnemy { bullet: Entity, enemy: Entity },
+    BulletHitPlayer { bullet: Entity },
     StageCleared,
 }
+
+// ---------------------------------------------------------------------------
+// Event bus
+// ---------------------------------------------------------------------------
 
 #[derive(Default)]
 pub struct EventBus {
@@ -24,6 +46,12 @@ pub struct EventBus {
 }
 
 impl EventBus {
-    pub fn emit(&mut self, event: GameEvent) { self.queue.push(event); }
-    pub fn drain(&mut self) -> Vec<GameEvent> { std::mem::take(&mut self.queue) }
+    pub fn emit(&mut self, event: GameEvent) {
+        self.queue.push(event);
+    }
+
+    /// Drains and returns all pending events, leaving the queue empty.
+    pub fn drain(&mut self) -> Vec<GameEvent> {
+        std::mem::take(&mut self.queue)
+    }
 }

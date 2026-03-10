@@ -1,10 +1,12 @@
 #![windows_subsystem = "windows"] // Suppress the console window on Windows release builds.
 #![cfg_attr(debug_assertions, allow(unused))] // Suppress unused-code warnings in debug builds.
 
+mod assets;
 mod components;
 mod constants;
 mod events;
 mod game;
+mod prefabs;
 mod resources;
 mod systems;
 
@@ -25,8 +27,7 @@ fn window_conf() -> Conf {
 
 #[macroquad::main(window_conf)]
 async fn main() {
-
-    let mut game = Game::new();
+    let mut game = Game::new().await;
     let mut accumulator = 0.0_f32;
 
     loop {
