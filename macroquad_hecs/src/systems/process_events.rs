@@ -6,7 +6,7 @@ use crate::audio::{MusicManager, SfxManager};
 use crate::components::{Bullet, Enemy, PickupKind, ScoreValue};
 use crate::constants::{PLAYER_MAX_LIVES, SCORE_PICKUP_STAR};
 use crate::events::{EventBus, GameEvent, MusicId, SfxId};
-use crate::resources::{GamePhase, GameState};
+use crate::resources::{GameState, GameManager};
 
 // ---------------------------------------------------------------------------
 // Process events
@@ -14,7 +14,7 @@ use crate::resources::{GamePhase, GameState};
 
 pub fn system_process_events(
     world: &mut World,
-    state: &mut GameState,
+    state: &mut GameManager,
     events_bus: &mut EventBus,
     sfx: &mut SfxManager,
     music: &mut MusicManager,
@@ -70,7 +70,7 @@ pub fn system_process_events(
             }
 
             GameEvent::PlayerDied => {
-                if state.phase != GamePhase::Playing {
+                if state.phase != GameState::Playing {
                     continue;
                 }
 
@@ -78,7 +78,7 @@ pub fn system_process_events(
                     state.lives -= 1;
                 } else if state.lives == 1 {
                     state.lives = 0;
-                    state.phase = GamePhase::Lost;
+                    state.phase = GameState::Lost;
                     state.update_high_score();
                 }
             }
@@ -89,21 +89,21 @@ pub fn system_process_events(
 
             GameEvent::PlayerCaptured { boss: _ } => {}
             GameEvent::StageCleared => {
-                if state.phase == GamePhase::Playing {
-                    state.phase = GamePhase::Won;
+                if state.phase == GameState::Playing {
+                    state.phase = GameState::Won;
                     state.update_high_score();
                 }
             }
         }
     }
 
-    if state.phase == GamePhase::Playing && !has_enemies(world) {
+    if state.phase == GameState::Playing && !has_enemies(world) {
         events.push_back(GameEvent::StageCleared);
     }
 
     while let Some(event) = events.pop_front() {
         if let GameEvent::StageCleared = event {
-            state.phase = GamePhase::Won;
+            state.phase = GameState::Won;
             state.update_high_score();
         }
     }
@@ -121,7 +121,7 @@ fn has_enemies(world: &World) -> bool {
     world.query::<&Enemy>().iter().next().is_some()
 }
 
-fn apply_pickup_reward(state: &mut GameState, kind: PickupKind) {
+fn apply_pickup_reward(state: &mut GameManager, kind: PickupKind) {
     match kind {
         PickupKind::Life => state.add_lives_clamped(1, PLAYER_MAX_LIVES),
         PickupKind::Star => state.add_score(SCORE_PICKUP_STAR),

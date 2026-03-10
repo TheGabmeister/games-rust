@@ -3,7 +3,7 @@ use hecs::World;
 use crate::assets::load_all_assets;
 use crate::events::GameEvent;
 use crate::prefabs;
-use crate::resources::{GamePhase, Resources};
+use crate::resources::{GameState, Resources};
 use crate::systems::{self, render};
 
 pub struct Game {
@@ -58,7 +58,7 @@ impl Game {
             self.res.state.debug_mode = !self.res.state.debug_mode;
         }
 
-        if self.res.state.phase == GamePhase::Playing {
+        if self.res.state.phase == GameState::Playing {
             systems::system_player_movement(&mut self.world, &self.res.input, dt);
             systems::system_player_fire(&mut self.world, &self.res.input, &self.res.sfx, dt);
 

@@ -3,7 +3,7 @@ use macroquad::prelude::*;
 
 use crate::components::{DrawLayer, Sprite, TextureId, Transform};
 use crate::constants::{SCREEN_HEIGHT, SCREEN_WIDTH};
-use crate::resources::{GamePhase, GameState, Textures};
+use crate::resources::{GameState, GameManager, Textures};
 
 /// Draw all entities that have Transform + Sprite + DrawLayer, sorted back-to-front.
 pub fn draw(world: &World, textures: &Textures) {
@@ -41,7 +41,7 @@ pub fn draw(world: &World, textures: &Textures) {
 }
 
 /// Overlay HUD (score, lives, high score).
-pub fn draw_hud(state: &GameState) {
+pub fn draw_hud(state: &GameManager) {
     draw_text(&format!("SCORE: {}", state.score), 10.0, 24.0, 22.0, WHITE);
     draw_text(&format!("LIVES: {}", state.lives), 10.0, 50.0, 22.0, WHITE);
     draw_text(
@@ -53,9 +53,9 @@ pub fn draw_hud(state: &GameState) {
     );
 
     let overlay = match state.phase {
-        GamePhase::Playing => None,
-        GamePhase::Won => Some(("STAGE CLEARED - PRESS ENTER", Color::from_hex(0x8cff8c))),
-        GamePhase::Lost => Some(("GAME OVER - PRESS ENTER", Color::from_hex(0xff6b6b))),
+        GameState::Playing => None,
+        GameState::Won => Some(("STAGE CLEARED - PRESS ENTER", Color::from_hex(0x8cff8c))),
+        GameState::Lost => Some(("GAME OVER - PRESS ENTER", Color::from_hex(0xff6b6b))),
     };
 
     if let Some((text, color)) = overlay {

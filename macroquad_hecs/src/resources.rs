@@ -17,7 +17,7 @@ pub struct Resources {
     pub textures: Textures,
     pub sfx: SfxManager,
     pub music: MusicManager,
-    pub state: GameState,
+    pub state: GameManager,
     pub input: InputState,
     pub events: EventBus,
 }
@@ -34,7 +34,7 @@ impl Resources {
             textures: Textures { textures },
             sfx: SfxManager::new(sfx),
             music: MusicManager::new(music),
-            state: GameState::default(),
+            state: GameManager::default(),
             input: InputState::default(),
             events: EventBus::default(),
         }
@@ -55,37 +55,37 @@ impl Textures {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum GamePhase {
+pub enum GameState {
     Playing,
     Won,
     Lost,
 }
 
-pub struct GameState {
+pub struct GameManager {
     pub score: u32,
     pub lives: u32,
     pub high_score: u32,
-    pub phase: GamePhase,
+    pub phase: GameState,
     pub debug_mode: bool,
 }
 
-impl Default for GameState {
+impl Default for GameManager {
     fn default() -> Self {
         Self {
             score: 0,
             lives: PLAYER_START_LIVES,
             high_score: 0,
-            phase: GamePhase::Playing,
+            phase: GameState::Playing,
             debug_mode: false,
         }
     }
 }
 
-impl GameState {
+impl GameManager {
     pub fn reset_run(&mut self) {
         self.score = 0;
         self.lives = PLAYER_START_LIVES;
-        self.phase = GamePhase::Playing;
+        self.phase = GameState::Playing;
     }
 
     pub fn update_high_score(&mut self) {
