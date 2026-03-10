@@ -6,6 +6,7 @@ mod components;
 mod constants;
 mod events;
 mod game;
+mod managers;
 mod prefabs;
 mod resources;
 mod systems;

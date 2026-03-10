@@ -55,10 +55,10 @@ impl Game {
 
         // Debug toggle
         if self.res.input.debug_toggle_pressed {
-            self.res.manager.debug_mode = !self.res.manager.debug_mode;
+            self.res.director.debug_mode = !self.res.director.debug_mode;
         }
 
-        if self.res.manager.state == GameState::Playing {
+        if self.res.director.state == GameState::Playing {
             systems::system_player_movement(&mut self.world, &self.res.input, dt);
             systems::system_player_fire(&mut self.world, &self.res.input, &self.res.sfx, dt);
 
@@ -74,7 +74,7 @@ impl Game {
             // React to events (score, despawns, state transitions)
             systems::system_process_events(
                 &mut self.world,
-                &mut self.res.manager,
+                &mut self.res.director,
                 &mut self.res.events,
                 &mut self.res.sfx,
                 &mut self.res.music,
@@ -89,17 +89,17 @@ impl Game {
         render::draw(&self.world, &self.res.textures);
 
         #[cfg(debug_assertions)]
-        if self.res.manager.debug_mode {
+        if self.res.director.debug_mode {
             systems::system_draw_colliders(&self.world);
         }
 
-        render::draw_hud(&self.res.manager);
+        render::draw_hud(&self.res.director);
     }
 
     fn restart_run(&mut self) {
         self.world.clear();
         spawn_initial_wave(&mut self.world);
         self.res.events.drain();
-        self.res.manager.reset_run();
+        self.res.director.reset_run();
     }
 }

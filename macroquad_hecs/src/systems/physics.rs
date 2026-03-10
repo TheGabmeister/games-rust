@@ -159,14 +159,12 @@ fn emit_event(
     let b_is_pickup = (lb.member & LAYER_PICKUP) != 0;
 
     if a_is_player_bullet && b_is_enemy {
-        events.emit(GameEvent::EnemyHit {
-            bullet: ea,
-            enemy: eb,
+        events.emit(GameEvent::EnemyDestroyed {
+
         });
     } else if b_is_player_bullet && a_is_enemy {
-        events.emit(GameEvent::EnemyHit {
-            bullet: eb,
-            enemy: ea,
+        events.emit(GameEvent::EnemyDestroyed {
+
         });
     } else if a_is_enemy_bullet && b_is_player {
         events.emit(GameEvent::PlayerHit { source: ea });

@@ -2,12 +2,11 @@ use std::collections::{HashSet, VecDeque};
 
 use hecs::{Entity, World};
 
-use crate::sfx::SfxManager;
-use crate::music::MusicManager;
 use crate::components::{Bullet, Enemy, PickupKind, ScoreValue};
 use crate::constants::{PLAYER_MAX_LIVES, SCORE_PICKUP_STAR};
 use crate::events::{EventBus, GameEvent, MusicId, SfxId};
-use crate::resources::{GameState, GameManager};
+use crate::managers::{MusicManager, SfxManager};
+use crate::resources::{GameState, GameDirector};
 
 // ---------------------------------------------------------------------------
 // Process events
@@ -15,7 +14,7 @@ use crate::resources::{GameState, GameManager};
 
 pub fn system_process_events(
     world: &mut World,
-    state: &mut GameManager,
+    state: &mut GameDirector,
     events_bus: &mut EventBus,
     sfx: &mut SfxManager,
     music: &mut MusicManager,
@@ -26,25 +25,6 @@ pub fn system_process_events(
 
     while let Some(event) = events.pop_front() {
         match event {
-            GameEvent::EnemyHit { bullet, enemy } => {
-                to_despawn.insert(bullet);
-
-                // One-hit kill: enemy is destroyed immediately on hit.
-                if !to_despawn.contains(&enemy) {
-                    if let Ok(enemy_data) = world.get::<&Enemy>(enemy) {
-                        let kind = enemy_data.kind;
-                        let score = world.get::<&ScoreValue>(enemy).ok().map(|s| s.0).unwrap_or(0);
-
-                        sfx.play_sound(SfxId::EnemyDestroyed);
-                        events.push_back(GameEvent::EnemyDestroyed {
-                            entity: enemy,
-                            kind,
-                        });
-                        state.add_score(score);
-                        to_despawn.insert(enemy);
-                    }
-                }
-            }
 
             GameEvent::PlayerHit { source } => {
                 if !player_died_this_tick {
@@ -122,7 +102,7 @@ fn has_enemies(world: &World) -> bool {
     world.query::<&Enemy>().iter().next().is_some()
 }
 
-fn apply_pickup_reward(state: &mut GameManager, kind: PickupKind) {
+fn apply_pickup_reward(state: &mut GameDirector, kind: PickupKind) {
     match kind {
         PickupKind::Life => state.add_lives_clamped(1, PLAYER_MAX_LIVES),
         PickupKind::Star => state.add_score(SCORE_PICKUP_STAR),

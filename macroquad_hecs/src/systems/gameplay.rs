@@ -1,10 +1,10 @@
 use hecs::{Entity, World};
 use macroquad::prelude::*;
 
-use crate::sfx::SfxManager;
 use crate::components::*;
 use crate::constants::*;
 use crate::events::SfxId;
+use crate::managers::SfxManager;
 use crate::prefabs;
 use crate::resources::InputState;
 

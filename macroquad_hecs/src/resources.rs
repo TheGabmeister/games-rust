@@ -4,10 +4,10 @@ use macroquad::miniquad::EventHandler;
 use macroquad::prelude::{Texture2D, Vec2};
 
 use crate::assets::LoadedAssets;
-use crate::sfx::{MusicManager, SfxManager};
 use crate::components::TextureId;
 use crate::constants::PLAYER_START_LIVES;
 use crate::events::EventBus;
+use crate::managers::{MusicManager, SfxManager};
 
 // ---------------------------------------------------------------------------
 // Resources root — grouped by domain to avoid god-object growth.
@@ -17,7 +17,7 @@ pub struct Resources {
     pub textures: Textures,
     pub sfx: SfxManager,
     pub music: MusicManager,
-    pub manager: GameManager,
+    pub director: GameDirector,
     pub input: InputState,
     pub events: EventBus,
 }
@@ -34,7 +34,7 @@ impl Resources {
             textures: Textures { textures },
             sfx: SfxManager::new(sfx),
             music: MusicManager::new(music),
-            manager: GameManager::default(),
+            director: GameDirector::default(),
             input: InputState::default(),
             events: EventBus::default(),
         }
@@ -61,7 +61,7 @@ pub enum GameState {
     Lost,
 }
 
-pub struct GameManager {
+pub struct GameDirector {
     pub score: u32,
     pub lives: u32,
     pub high_score: u32,
@@ -69,7 +69,7 @@ pub struct GameManager {
     pub debug_mode: bool,
 }
 
-impl Default for GameManager {
+impl Default for GameDirector {
     fn default() -> Self {
         Self {
             score: 0,
@@ -81,7 +81,7 @@ impl Default for GameManager {
     }
 }
 
-impl GameManager {
+impl GameDirector {
     pub fn reset_run(&mut self) {
         self.score = 0;
         self.lives = PLAYER_START_LIVES;
