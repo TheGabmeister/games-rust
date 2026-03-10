@@ -52,7 +52,7 @@ pub fn draw_hud(state: &GameManager) {
         Color::from_hex(0xffd700),
     );
 
-    let overlay = match state.phase {
+    let overlay = match state.state {
         GameState::Playing => None,
         GameState::Won => Some(("STAGE CLEARED - PRESS ENTER", Color::from_hex(0x8cff8c))),
         GameState::Lost => Some(("GAME OVER - PRESS ENTER", Color::from_hex(0xff6b6b))),

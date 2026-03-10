@@ -70,7 +70,7 @@ pub fn system_process_events(
             }
 
             GameEvent::PlayerDied => {
-                if state.phase != GameState::Playing {
+                if state.state != GameState::Playing {
                     continue;
                 }
 
@@ -78,7 +78,7 @@ pub fn system_process_events(
                     state.lives -= 1;
                 } else if state.lives == 1 {
                     state.lives = 0;
-                    state.phase = GameState::Lost;
+                    state.state = GameState::Lost;
                     state.update_high_score();
                 }
             }
@@ -89,21 +89,21 @@ pub fn system_process_events(
 
             GameEvent::PlayerCaptured { boss: _ } => {}
             GameEvent::StageCleared => {
-                if state.phase == GameState::Playing {
-                    state.phase = GameState::Won;
+                if state.state == GameState::Playing {
+                    state.state = GameState::Won;
                     state.update_high_score();
                 }
             }
         }
     }
 
-    if state.phase == GameState::Playing && !has_enemies(world) {
+    if state.state == GameState::Playing && !has_enemies(world) {
         events.push_back(GameEvent::StageCleared);
     }
 
     while let Some(event) = events.pop_front() {
         if let GameEvent::StageCleared = event {
-            state.phase = GameState::Won;
+            state.state = GameState::Won;
             state.update_high_score();
         }
     }

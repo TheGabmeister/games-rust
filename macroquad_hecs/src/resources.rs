@@ -17,7 +17,7 @@ pub struct Resources {
     pub textures: Textures,
     pub sfx: SfxManager,
     pub music: MusicManager,
-    pub state: GameManager,
+    pub manager: GameManager,
     pub input: InputState,
     pub events: EventBus,
 }
@@ -34,7 +34,7 @@ impl Resources {
             textures: Textures { textures },
             sfx: SfxManager::new(sfx),
             music: MusicManager::new(music),
-            state: GameManager::default(),
+            manager: GameManager::default(),
             input: InputState::default(),
             events: EventBus::default(),
         }
@@ -65,7 +65,7 @@ pub struct GameManager {
     pub score: u32,
     pub lives: u32,
     pub high_score: u32,
-    pub phase: GameState,
+    pub state: GameState,
     pub debug_mode: bool,
 }
 
@@ -75,7 +75,7 @@ impl Default for GameManager {
             score: 0,
             lives: PLAYER_START_LIVES,
             high_score: 0,
-            phase: GameState::Playing,
+            state: GameState::Playing,
             debug_mode: false,
         }
     }
@@ -85,7 +85,7 @@ impl GameManager {
     pub fn reset_run(&mut self) {
         self.score = 0;
         self.lives = PLAYER_START_LIVES;
-        self.phase = GameState::Playing;
+        self.state = GameState::Playing;
     }
 
     pub fn update_high_score(&mut self) {
