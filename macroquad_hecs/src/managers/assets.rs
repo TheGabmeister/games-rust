@@ -14,19 +14,7 @@ pub struct LoadedAssets {
 }
 
 pub struct TextureManager {
-    textures: HashMap<TextureId, Texture2D>,
-}
-
-impl TextureManager {
-    pub fn new(textures: HashMap<TextureId, Texture2D>) -> Self {
-        Self { textures }
-    }
-
-    pub fn texture(&self, id: TextureId) -> &Texture2D {
-        self.textures
-            .get(&id)
-            .unwrap_or_else(|| panic!("Missing texture for id: {:?}", id))
-    }
+    pub(super) textures: HashMap<TextureId, Texture2D>,
 }
 
 pub async fn load_all_assets() -> LoadedAssets {
