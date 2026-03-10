@@ -41,8 +41,6 @@ impl Game {
         let mut world = World::new();
 
         spawn_initial_wave(&mut world);
-
-        // GameStarted event triggers music in system_process_events (first update tick)
         res.events.emit(GameEvent::GameStarted);
 
         Self {
