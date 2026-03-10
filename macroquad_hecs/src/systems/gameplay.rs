@@ -1,3 +1,5 @@
+use std::collections::{HashSet, VecDeque};
+
 use hecs::{Entity, World};
 use macroquad::prelude::*;
 
@@ -145,19 +147,32 @@ pub fn system_cull_offscreen(world: &mut World) {
 // ---------------------------------------------------------------------------
 
 pub fn system_process_events(world: &mut World, res: &mut Resources) {
-    let events = res.events.drain();
-    let mut to_despawn: Vec<Entity> = Vec::new();
-    let mut player_died_this_tick = false;
+    const MAX_EVENTS_PER_TICK: usize = 1024;
 
-    for event in events {
+    let mut events: VecDeque<GameEvent> = res.events.drain().into();
+    let mut to_despawn: HashSet<Entity> = HashSet::new();
+    let mut player_died_this_tick = false;
+    let mut reset_requested = false;
+    let mut processed_events = 0_usize;
+
+    while let Some(event) = events.pop_front() {
+        processed_events += 1;
+        if processed_events > MAX_EVENTS_PER_TICK {
+            #[cfg(debug_assertions)]
+            eprintln!(
+                "system_process_events: exceeded MAX_EVENTS_PER_TICK={MAX_EVENTS_PER_TICK}, dropping remaining events this tick"
+            );
+            break;
+        }
+
         match event {
             GameEvent::BulletHitEnemy { bullet, enemy } => {
-                to_despawn.push(bullet);
+                to_despawn.insert(bullet);
                 apply_damage_to_enemy(world, res, enemy, &mut to_despawn);
             }
 
             GameEvent::BulletHitPlayer { bullet } => {
-                to_despawn.push(bullet);
+                to_despawn.insert(bullet);
                 apply_damage_to_player(world, res, &mut player_died_this_tick);
             }
 
@@ -170,7 +185,7 @@ pub fn system_process_events(world: &mut World, res: &mut Resources) {
             }
 
             GameEvent::PickupCollected { entity, kind } => {
-                to_despawn.push(entity);
+                to_despawn.insert(entity);
                 match kind {
                     PickupKind::Life => {
                         res.lives = (res.lives + 1).min(5);
@@ -183,7 +198,7 @@ pub fn system_process_events(world: &mut World, res: &mut Resources) {
             }
 
             GameEvent::PowerupCollected { entity, effect } => {
-                to_despawn.push(entity);
+                to_despawn.insert(entity);
                 // Template: extend with real powerup logic here.
                 let _ = effect;
                 
@@ -193,9 +208,7 @@ pub fn system_process_events(world: &mut World, res: &mut Resources) {
                 if res.lives > 0 {
                     res.lives -= 1;
                 } else {
-                    world.clear();
-                    prefabs::spawn_player(world, res);
-                    res.score = 0;
+                    reset_requested = true;
                 }
             }
 
@@ -203,8 +216,20 @@ pub fn system_process_events(world: &mut World, res: &mut Resources) {
                 res.music_manager.play_music(MusicId::Spaceshooter);
             }
 
-            _ => {}
+            GameEvent::PlayerCaptured { boss: _ } => {}
+            GameEvent::StageCleared => {}
         }
+
+        if !res.events.is_empty() {
+            events.extend(res.events.drain());
+        }
+    }
+
+    if reset_requested {
+        world.clear();
+        prefabs::spawn_player(world, res);
+        res.score = 0;
+        to_despawn.clear();
     }
 
     for entity in to_despawn {
@@ -220,7 +245,7 @@ fn apply_damage_to_enemy(
     world: &mut World,
     res: &mut Resources,
     enemy: Entity,
-    to_despawn: &mut Vec<Entity>,
+    to_despawn: &mut HashSet<Entity>,
 ) {
     // Ignore duplicate hit events for enemies already marked for despawn this tick.
     if to_despawn.contains(&enemy) {
@@ -237,7 +262,7 @@ fn apply_damage_to_enemy(
     res.sfx_manager.play_sound(SfxId::EnemyDestroyed);
     res.events.emit(GameEvent::EnemyDestroyed { entity: enemy, kind });
     res.score += score;
-    to_despawn.push(enemy);
+    to_despawn.insert(enemy);
 }
 
 fn apply_damage_to_player(
