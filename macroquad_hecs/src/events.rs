@@ -3,17 +3,28 @@ use hecs::Entity;
 use crate::components::{EnemyKind, PickupKind, PowerupEffect};
 
 // ---------------------------------------------------------------------------
-// Sound IDs — placed here so event handling and audio are in one import.
+// Audio IDs/commands — placed here so gameplay and audio are in one import.
 // ---------------------------------------------------------------------------
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-pub enum SoundId {
+pub enum SfxId {
     PlayerLaser,
     PlayerDied,
     PlayerPowerup,
     EnemyLaser,
     EnemyDestroyed,
-    MusicSpaceshooter,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum MusicId {
+    Spaceshooter,
+}
+
+#[derive(Clone, Copy, Debug)]
+pub enum MusicCommand {
+    Play(MusicId),
+    Stop,
+    SetVolume(f32),
 }
 
 // ---------------------------------------------------------------------------

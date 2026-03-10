@@ -5,17 +5,23 @@ use macroquad::prelude::*;
 
 use crate::components::TextureId;
 use crate::constants::ASSETS_DIR;
-use crate::events::SoundId;
+use crate::events::{MusicId, SfxId};
 
 pub struct LoadedAssets {
     pub textures: HashMap<TextureId, Texture2D>,
-    pub sounds: HashMap<SoundId, Sound>,
+    pub sfx: HashMap<SfxId, Sound>,
+    pub music: HashMap<MusicId, Sound>,
 }
 
 pub async fn load_all_assets() -> LoadedAssets {
     let textures = load_textures().await;
-    let sounds = load_sounds().await;
-    LoadedAssets { textures, sounds }
+    let sfx = load_sfx().await;
+    let music = load_music().await;
+    LoadedAssets {
+        textures,
+        sfx,
+        music,
+    }
 }
 
 async fn load_textures() -> HashMap<TextureId, Texture2D> {
@@ -77,7 +83,7 @@ async fn load_textures() -> HashMap<TextureId, Texture2D> {
     map
 }
 
-async fn load_sounds() -> HashMap<SoundId, Sound> {
+async fn load_sfx() -> HashMap<SfxId, Sound> {
     async fn load(path: &str) -> Sound {
         load_sound(path)
             .await
@@ -87,27 +93,40 @@ async fn load_sounds() -> HashMap<SoundId, Sound> {
     let mut map = HashMap::new();
 
     map.insert(
-        SoundId::PlayerLaser,
+        SfxId::PlayerLaser,
         load(&format!("{ASSETS_DIR}/player/player_laser.ogg")).await,
     );
     map.insert(
-        SoundId::PlayerDied,
+        SfxId::PlayerDied,
         load(&format!("{ASSETS_DIR}/player/player_died.ogg")).await,
     );
     map.insert(
-        SoundId::PlayerPowerup,
+        SfxId::PlayerPowerup,
         load(&format!("{ASSETS_DIR}/player/player_powerup.ogg")).await,
     );
     map.insert(
-        SoundId::EnemyLaser,
+        SfxId::EnemyLaser,
         load(&format!("{ASSETS_DIR}/enemies/enemy_laser.ogg")).await,
     );
     map.insert(
-        SoundId::EnemyDestroyed,
+        SfxId::EnemyDestroyed,
         load(&format!("{ASSETS_DIR}/enemies/enemy_destroyed.ogg")).await,
     );
+
+    map
+}
+
+async fn load_music() -> HashMap<MusicId, Sound> {
+    async fn load(path: &str) -> Sound {
+        load_sound(path)
+            .await
+            .unwrap_or_else(|e| panic!("Failed to load music '{path}': {e}"))
+    }
+
+    let mut map = HashMap::new();
+
     map.insert(
-        SoundId::MusicSpaceshooter,
+        MusicId::Spaceshooter,
         load(&format!("{ASSETS_DIR}/music/music_spaceshooter.ogg")).await,
     );
 

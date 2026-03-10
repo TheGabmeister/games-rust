@@ -1,8 +1,7 @@
 use hecs::World;
-use macroquad::audio::{play_sound, PlaySoundParams};
 
 use crate::assets::load_all_assets;
-use crate::events::{GameEvent, SoundId};
+use crate::events::GameEvent;
 use crate::prefabs;
 use crate::resources::Resources;
 use crate::systems::{self, render};
@@ -27,15 +26,7 @@ impl Game {
         prefabs::spawn_enemy(&mut world, crate::components::EnemyKind::Blue,  macroquad::prelude::vec2(300.0, 150.0));
         prefabs::spawn_enemy(&mut world, crate::components::EnemyKind::Green, macroquad::prelude::vec2(450.0, 100.0));
 
-        // Start background music
-        play_sound(
-            res.sound(SoundId::MusicSpaceshooter),
-            PlaySoundParams {
-                looped: true,
-                volume: 0.4,
-            },
-        );
-
+        // GameStarted event triggers music in system_process_events (first update tick)
         res.events.emit(GameEvent::GameStarted);
 
         Self { world, res }
@@ -65,8 +56,9 @@ impl Game {
         // 6. React to events (health, score, despawns, re-emits)
         systems::system_process_events(&mut self.world, &mut self.res);
 
-        // 7. Play queued sounds
-        systems::system_audio(&mut self.res);
+        // 7. Process music commands and queued SFX
+        systems::system_music(&mut self.res);
+        systems::system_sfx(&mut self.res);
 
         // 8. Debug toggle
         if self.res.input.debug_toggle_pressed {

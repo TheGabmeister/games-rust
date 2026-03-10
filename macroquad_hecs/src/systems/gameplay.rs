@@ -3,7 +3,7 @@ use macroquad::prelude::*;
 
 use crate::components::*;
 use crate::constants::*;
-use crate::events::{GameEvent, SoundId};
+use crate::events::{GameEvent, MusicId, SfxId};
 use crate::prefabs;
 use crate::resources::Resources;
 
@@ -38,7 +38,7 @@ pub fn system_player_fire(world: &mut World, res: &mut Resources, dt: f32) {
 
     if let Some((pos, speed)) = fire_info {
         prefabs::spawn_player_bullet(world, pos - vec2(0.0, 20.0), speed);
-        res.queue_sound(SoundId::PlayerLaser);
+        res.queue_sfx(SfxId::PlayerLaser);
     }
 }
 
@@ -73,7 +73,7 @@ pub fn system_enemy_fire(world: &mut World, res: &mut Resources, dt: f32) {
 
     for (pos, speed) in fire_positions {
         prefabs::spawn_enemy_bullet(world, pos + vec2(0.0, 20.0), speed);
-        res.queue_sound(SoundId::EnemyLaser);
+        res.queue_sfx(SfxId::EnemyLaser);
     }
 }
 
@@ -165,7 +165,7 @@ pub fn system_process_events(world: &mut World, res: &mut Resources) {
             }
 
             GameEvent::EnemyDestroyed { .. } => {
-                res.queue_sound(SoundId::EnemyDestroyed);
+                res.queue_sfx(SfxId::EnemyDestroyed);
             }
 
             GameEvent::PickupTouched { pickup } => {
@@ -193,14 +193,14 @@ pub fn system_process_events(world: &mut World, res: &mut Resources) {
                         res.score += 500;
                     }
                 }
-                res.queue_sound(SoundId::PlayerPowerup);
+                res.queue_sfx(SfxId::PlayerPowerup);
             }
 
             GameEvent::PowerupCollected { entity, effect } => {
                 to_despawn.push(entity);
                 // Template: extend with real powerup logic here.
                 let _ = effect;
-                res.queue_sound(SoundId::PlayerPowerup);
+                res.queue_sfx(SfxId::PlayerPowerup);
             }
 
             GameEvent::PlayerDied => {
@@ -211,6 +211,10 @@ pub fn system_process_events(world: &mut World, res: &mut Resources) {
                     prefabs::spawn_player(world, res);
                     res.score = 0;
                 }
+            }
+
+            GameEvent::GameStarted => {
+                res.play_music(MusicId::Spaceshooter);
             }
 
             _ => {}
@@ -278,6 +282,6 @@ fn apply_damage_to_player(world: &mut World, res: &mut Resources) {
             res.events.emit(GameEvent::PlayerDied);
         }
 
-        res.queue_sound(SoundId::PlayerDied);
+        res.queue_sfx(SfxId::PlayerDied);
     }
 }
