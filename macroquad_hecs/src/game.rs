@@ -27,7 +27,7 @@ impl Game {
         prefabs::spawn_enemy(&mut world, crate::components::EnemyKind::Green, macroquad::prelude::vec2(450.0, 100.0));
 
         // GameStarted event triggers music in system_process_events (first update tick)
-        res.runtime.events.emit(GameEvent::GameStarted);
+        res.events.emit(GameEvent::GameStarted);
 
         Self {
             world,
@@ -38,13 +38,13 @@ impl Game {
     /// Fixed-timestep update (called at 60 Hz).
     pub fn update(&mut self, dt: f32) {
         // 1. Capture input (must be first — systems read runtime.input)
-        systems::system_capture_input(&mut self.res.runtime.input);
+        systems::system_capture_input(&mut self.res.input);
 
         // 2. Player intent
-        systems::system_player_movement(&mut self.world, &self.res.runtime.input, dt);
+        systems::system_player_movement(&mut self.world, &self.res.input, dt);
         systems::system_player_fire(
             &mut self.world,
-            &self.res.runtime.input,
+            &self.res.input,
             &self.res.audio.sfx,
             dt,
         );
@@ -59,18 +59,18 @@ impl Game {
         systems::system_lifetime(&mut self.world, dt);
 
         // 5. Collision → events
-        systems::system_collision(&mut self.world, &mut self.res.runtime.events);
+        systems::system_collision(&mut self.world, &mut self.res.events);
 
         // 6. React to events (score, despawns, re-emits)
         systems::system_process_events(
             &mut self.world,
             &mut self.res.state,
-            &mut self.res.runtime.events,
+            &mut self.res.events,
             &mut self.res.audio,
         );
 
         // 7. Debug toggle
-        if self.res.runtime.input.debug_toggle_pressed {
+        if self.res.input.debug_toggle_pressed {
             self.res.state.debug_mode = !self.res.state.debug_mode;
         }
     }

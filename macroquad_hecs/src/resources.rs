@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use macroquad::miniquad::EventHandler;
 use macroquad::prelude::{Texture2D, Vec2};
 
 use crate::assets::LoadedAssets;
@@ -16,12 +17,30 @@ pub struct Resources {
     pub textures: Textures,
     pub audio: AudioState,
     pub state: GameState,
-    pub runtime: RuntimeIO,
+    pub input: InputState,
+    pub events: EventBus,
 }
 
-// ---------------------------------------------------------------------------
-// Textures
-// ---------------------------------------------------------------------------
+impl Resources {
+    pub fn new(assets: LoadedAssets) -> Self {
+        let LoadedAssets {
+            textures,
+            sfx,
+            music,
+        } = assets;
+
+        Self {
+            textures: Textures { textures },
+            audio: AudioState {
+                sfx: SfxManager::new(sfx),
+                music: MusicManager::new(music),
+            },
+            state: GameState::default(),
+            input: InputState::default(),
+            events: EventBus::default(),
+        }
+    }
+}
 
 pub struct Textures {
     textures: HashMap<TextureId, Texture2D>,
@@ -36,18 +55,10 @@ impl Textures {
     }
 }
 
-// ---------------------------------------------------------------------------
-// Audio
-// ---------------------------------------------------------------------------
-
 pub struct AudioState {
     pub sfx: SfxManager,
     pub music: MusicManager,
 }
-
-// ---------------------------------------------------------------------------
-// Game state
-// ---------------------------------------------------------------------------
 
 pub struct GameState {
     pub score: u32,
@@ -74,39 +85,6 @@ impl GameState {
 
     pub fn add_lives_clamped(&mut self, amount: u32, max_lives: u32) {
         self.lives = self.lives.saturating_add(amount).min(max_lives);
-    }
-}
-
-// ---------------------------------------------------------------------------
-// Runtime I/O
-// ---------------------------------------------------------------------------
-
-#[derive(Default)]
-pub struct RuntimeIO {
-    /// Per-frame input snapshot (written by system_capture_input).
-    pub input: InputState,
-
-    /// Event bus (written by systems, drained by system_process_events).
-    pub events: EventBus,
-}
-
-impl Resources {
-    pub fn new(assets: LoadedAssets) -> Self {
-        let LoadedAssets {
-            textures,
-            sfx,
-            music,
-        } = assets;
-
-        Self {
-            textures: Textures { textures },
-            audio: AudioState {
-                sfx: SfxManager::new(sfx),
-                music: MusicManager::new(music),
-            },
-            state: GameState::default(),
-            runtime: RuntimeIO::default(),
-        }
     }
 }
 
