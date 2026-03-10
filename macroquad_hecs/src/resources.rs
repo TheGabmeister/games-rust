@@ -60,10 +60,18 @@ pub struct AudioState {
     pub music: MusicManager,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum GamePhase {
+    Playing,
+    Won,
+    Lost,
+}
+
 pub struct GameState {
     pub score: u32,
     pub lives: u32,
     pub high_score: u32,
+    pub phase: GamePhase,
     pub debug_mode: bool,
 }
 
@@ -73,12 +81,23 @@ impl Default for GameState {
             score: 0,
             lives: PLAYER_START_LIVES,
             high_score: 0,
+            phase: GamePhase::Playing,
             debug_mode: false,
         }
     }
 }
 
 impl GameState {
+    pub fn reset_run(&mut self) {
+        self.score = 0;
+        self.lives = PLAYER_START_LIVES;
+        self.phase = GamePhase::Playing;
+    }
+
+    pub fn update_high_score(&mut self) {
+        self.high_score = self.high_score.max(self.score);
+    }
+
     pub fn add_score(&mut self, points: u32) {
         self.score = self.score.saturating_add(points);
     }

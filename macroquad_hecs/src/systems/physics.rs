@@ -151,17 +151,31 @@ fn emit_event(
     let b_is_player_bullet = (lb.member & LAYER_PLAYER_BULLET) != 0;
     let a_is_enemy_bullet = (la.member & LAYER_ENEMY_BULLET) != 0;
     let b_is_enemy_bullet = (lb.member & LAYER_ENEMY_BULLET) != 0;
+    let a_is_player = (la.member & LAYER_PLAYER) != 0;
+    let b_is_player = (lb.member & LAYER_PLAYER) != 0;
+    let a_is_enemy = (la.member & LAYER_ENEMY) != 0;
+    let b_is_enemy = (lb.member & LAYER_ENEMY) != 0;
     let a_is_pickup = (la.member & LAYER_PICKUP) != 0;
     let b_is_pickup = (lb.member & LAYER_PICKUP) != 0;
 
-    if a_is_player_bullet {
-        events.emit(GameEvent::EnemyDestroyed { bullet: ea, enemy: eb });
-    } else if b_is_player_bullet {
-        events.emit(GameEvent::EnemyDestroyed { bullet: eb, enemy: ea });
-    } else if a_is_enemy_bullet {
-        events.emit(GameEvent::EnemyDestroyed { bullet: ea });
-    } else if b_is_enemy_bullet {
-        events.emit(GameEvent::EnemyDestroyed { bullet: eb });
+    if a_is_player_bullet && b_is_enemy {
+        events.emit(GameEvent::EnemyHit {
+            bullet: ea,
+            enemy: eb,
+        });
+    } else if b_is_player_bullet && a_is_enemy {
+        events.emit(GameEvent::EnemyHit {
+            bullet: eb,
+            enemy: ea,
+        });
+    } else if a_is_enemy_bullet && b_is_player {
+        events.emit(GameEvent::PlayerHit { source: ea });
+    } else if b_is_enemy_bullet && a_is_player {
+        events.emit(GameEvent::PlayerHit { source: eb });
+    } else if a_is_enemy && b_is_player {
+        events.emit(GameEvent::PlayerHit { source: ea });
+    } else if b_is_enemy && a_is_player {
+        events.emit(GameEvent::PlayerHit { source: eb });
     } else if a_is_pickup {
         emit_pickup_event(world, events, ea);
     } else if b_is_pickup {

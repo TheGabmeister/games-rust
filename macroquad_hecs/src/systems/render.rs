@@ -2,8 +2,8 @@ use hecs::World;
 use macroquad::prelude::*;
 
 use crate::components::{DrawLayer, Sprite, TextureId, Transform};
-use crate::constants::{SCREEN_WIDTH};
-use crate::resources::{GameState, Textures};
+use crate::constants::{SCREEN_HEIGHT, SCREEN_WIDTH};
+use crate::resources::{GamePhase, GameState, Textures};
 
 /// Draw all entities that have Transform + Sprite + DrawLayer, sorted back-to-front.
 pub fn draw(world: &World, textures: &Textures) {
@@ -51,4 +51,30 @@ pub fn draw_hud(state: &GameState) {
         22.0,
         Color::from_hex(0xffd700),
     );
+
+    let overlay = match state.phase {
+        GamePhase::Playing => None,
+        GamePhase::Won => Some(("STAGE CLEARED - PRESS ENTER", Color::from_hex(0x8cff8c))),
+        GamePhase::Lost => Some(("GAME OVER - PRESS ENTER", Color::from_hex(0xff6b6b))),
+    };
+
+    if let Some((text, color)) = overlay {
+        let dim = measure_text(text, None, 36, 1.0);
+        let panel_h = 80.0;
+        let panel_y = SCREEN_HEIGHT * 0.5 - panel_h * 0.5;
+        draw_rectangle(
+            0.0,
+            panel_y,
+            SCREEN_WIDTH,
+            panel_h,
+            Color::new(0.0, 0.0, 0.0, 0.65),
+        );
+        draw_text(
+            text,
+            (SCREEN_WIDTH - dim.width) * 0.5,
+            panel_y + 52.0,
+            36.0,
+            color,
+        );
+    }
 }

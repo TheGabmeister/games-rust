@@ -34,8 +34,9 @@ pub enum MusicCommand {
 #[derive(Clone, Debug)]
 pub enum GameEvent {
     GameStarted,
+    EnemyHit { bullet: Entity, enemy: Entity },
+    PlayerHit { source: Entity },
     PlayerDied,
-    PlayerHit,
     PlayerCaptured { boss: Entity },
     EnemyDestroyed { entity: Entity, kind: EnemyKind },
     PickupCollected { entity: Entity, kind: PickupKind },

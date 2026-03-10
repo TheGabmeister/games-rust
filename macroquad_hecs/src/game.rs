@@ -3,12 +3,33 @@ use hecs::World;
 use crate::assets::load_all_assets;
 use crate::events::GameEvent;
 use crate::prefabs;
-use crate::resources::Resources;
+use crate::resources::{GamePhase, Resources};
 use crate::systems::{self, render};
 
 pub struct Game {
     world: World,
     res: Resources,
+}
+
+fn spawn_initial_wave(world: &mut World) {
+    prefabs::spawn_player(world);
+
+    // Spawn a few enemies to demonstrate the template.
+    prefabs::spawn_enemy(
+        world,
+        crate::components::EnemyKind::Black,
+        macroquad::prelude::vec2(150.0, 100.0),
+    );
+    prefabs::spawn_enemy(
+        world,
+        crate::components::EnemyKind::Blue,
+        macroquad::prelude::vec2(300.0, 150.0),
+    );
+    prefabs::spawn_enemy(
+        world,
+        crate::components::EnemyKind::Green,
+        macroquad::prelude::vec2(450.0, 100.0),
+    );
 }
 
 impl Game {
@@ -19,12 +40,7 @@ impl Game {
         let mut res = Resources::new(assets);
         let mut world = World::new();
 
-        prefabs::spawn_player(&mut world);
-
-        // Spawn a few enemies to demonstrate the template
-        prefabs::spawn_enemy(&mut world, crate::components::EnemyKind::Black, macroquad::prelude::vec2(150.0, 100.0));
-        prefabs::spawn_enemy(&mut world, crate::components::EnemyKind::Blue,  macroquad::prelude::vec2(300.0, 150.0));
-        prefabs::spawn_enemy(&mut world, crate::components::EnemyKind::Green, macroquad::prelude::vec2(450.0, 100.0));
+        spawn_initial_wave(&mut world);
 
         // GameStarted event triggers music in system_process_events (first update tick)
         res.events.emit(GameEvent::GameStarted);
@@ -37,32 +53,35 @@ impl Game {
 
     /// Fixed-timestep update (called at 60 Hz).
     pub fn update(&mut self, dt: f32) {
-
         systems::system_capture_input(&mut self.res.input);
-
-        systems::system_player_movement(&mut self.world, &self.res.input, dt);
-        systems::system_player_fire(&mut self.world, &self.res.input, &self.res.audio.sfx, dt,);
-
-        systems::system_enemy_movement(&mut self.world);
-        systems::system_enemy_fire(&mut self.world, &self.res.audio.sfx, dt);
-
-        systems::system_integrate(&mut self.world, dt);
-        systems::system_cull_offscreen(&mut self.world);
-        systems::system_lifetime(&mut self.world, dt);
-
-        systems::system_collision(&mut self.world, &mut self.res.events);
-
-        // React to events (score, despawns, re-emits)
-        systems::system_process_events(
-            &mut self.world,
-            &mut self.res.state,
-            &mut self.res.events,
-            &mut self.res.audio,
-        );
 
         // Debug toggle
         if self.res.input.debug_toggle_pressed {
             self.res.state.debug_mode = !self.res.state.debug_mode;
+        }
+
+        if self.res.state.phase == GamePhase::Playing {
+            systems::system_player_movement(&mut self.world, &self.res.input, dt);
+            systems::system_player_fire(&mut self.world, &self.res.input, &self.res.audio.sfx, dt);
+
+            systems::system_enemy_movement(&mut self.world);
+            systems::system_enemy_fire(&mut self.world, &self.res.audio.sfx, dt);
+
+            systems::system_integrate(&mut self.world, dt);
+            systems::system_cull_offscreen(&mut self.world);
+            systems::system_lifetime(&mut self.world, dt);
+
+            systems::system_collision(&mut self.world, &mut self.res.events);
+
+            // React to events (score, despawns, state transitions)
+            systems::system_process_events(
+                &mut self.world,
+                &mut self.res.state,
+                &mut self.res.events,
+                &mut self.res.audio,
+            );
+        } else if self.res.input.confirm_pressed {
+            self.restart_run();
         }
     }
 
@@ -76,5 +95,12 @@ impl Game {
         }
 
         render::draw_hud(&self.res.state);
+    }
+
+    fn restart_run(&mut self) {
+        self.world.clear();
+        spawn_initial_wave(&mut self.world);
+        self.res.events.drain();
+        self.res.state.reset_run();
     }
 }
