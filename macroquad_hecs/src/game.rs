@@ -37,31 +37,22 @@ impl Game {
 
     /// Fixed-timestep update (called at 60 Hz).
     pub fn update(&mut self, dt: f32) {
-        // 1. Capture input (must be first — systems read runtime.input)
+
         systems::system_capture_input(&mut self.res.input);
 
-        // 2. Player intent
         systems::system_player_movement(&mut self.world, &self.res.input, dt);
-        systems::system_player_fire(
-            &mut self.world,
-            &self.res.input,
-            &self.res.audio.sfx,
-            dt,
-        );
+        systems::system_player_fire(&mut self.world, &self.res.input, &self.res.audio.sfx, dt,);
 
-        // 3. Enemy AI
         systems::system_enemy_movement(&mut self.world);
         systems::system_enemy_fire(&mut self.world, &self.res.audio.sfx, dt);
 
-        // 4. Physics
         systems::system_integrate(&mut self.world, dt);
         systems::system_cull_offscreen(&mut self.world);
         systems::system_lifetime(&mut self.world, dt);
 
-        // 5. Collision → events
         systems::system_collision(&mut self.world, &mut self.res.events);
 
-        // 6. React to events (score, despawns, re-emits)
+        // React to events (score, despawns, re-emits)
         systems::system_process_events(
             &mut self.world,
             &mut self.res.state,
@@ -69,7 +60,7 @@ impl Game {
             &mut self.res.audio,
         );
 
-        // 7. Debug toggle
+        // Debug toggle
         if self.res.input.debug_toggle_pressed {
             self.res.state.debug_mode = !self.res.state.debug_mode;
         }
