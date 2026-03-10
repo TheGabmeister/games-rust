@@ -155,13 +155,13 @@ fn emit_event(
     let b_is_pickup = (lb.member & LAYER_PICKUP) != 0;
 
     if a_is_player_bullet {
-        events.emit(GameEvent::BulletHitEnemy { bullet: ea, enemy: eb });
+        events.emit(GameEvent::EnemyDestroyed { bullet: ea, enemy: eb });
     } else if b_is_player_bullet {
-        events.emit(GameEvent::BulletHitEnemy { bullet: eb, enemy: ea });
+        events.emit(GameEvent::EnemyDestroyed { bullet: eb, enemy: ea });
     } else if a_is_enemy_bullet {
-        events.emit(GameEvent::BulletHitPlayer { bullet: ea });
+        events.emit(GameEvent::EnemyDestroyed { bullet: ea });
     } else if b_is_enemy_bullet {
-        events.emit(GameEvent::BulletHitPlayer { bullet: eb });
+        events.emit(GameEvent::EnemyDestroyed { bullet: eb });
     } else if a_is_pickup {
         emit_pickup_event(world, events, ea);
     } else if b_is_pickup {

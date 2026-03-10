@@ -40,8 +40,6 @@ pub enum GameEvent {
     EnemyDestroyed { entity: Entity, kind: EnemyKind },
     PickupCollected { entity: Entity, kind: PickupKind },
     PowerupCollected { entity: Entity, effect: PowerupEffect },
-    BulletHitEnemy { bullet: Entity, enemy: Entity },
-    BulletHitPlayer { bullet: Entity },
     StageCleared,
 }
 

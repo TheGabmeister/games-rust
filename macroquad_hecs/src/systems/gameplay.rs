@@ -160,23 +160,6 @@ pub fn system_process_events(
 
     while let Some(event) = events.pop_front() {
         match event {
-            GameEvent::BulletHitEnemy { bullet, enemy } => {
-                to_despawn.insert(bullet);
-                apply_damage_to_enemy(
-                    world,
-                    state,
-                    events_bus,
-                    &audio.sfx,
-                    enemy,
-                    &mut to_despawn,
-                );
-            }
-
-            GameEvent::BulletHitPlayer { bullet } => {
-                to_despawn.insert(bullet);
-                apply_damage_to_player(world, events_bus, &audio.sfx, &mut player_died_this_tick);
-            }
-
             GameEvent::PlayerHit => {
                 apply_damage_to_player(world, events_bus, &audio.sfx, &mut player_died_this_tick);
             }
