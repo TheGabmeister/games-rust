@@ -2,7 +2,8 @@ use std::collections::{HashSet, VecDeque};
 
 use hecs::{Entity, World};
 
-use crate::audio::{MusicManager, SfxManager};
+use crate::sfx::SfxManager;
+use crate::music::MusicManager;
 use crate::components::{Bullet, Enemy, PickupKind, ScoreValue};
 use crate::constants::{PLAYER_MAX_LIVES, SCORE_PICKUP_STAR};
 use crate::events::{EventBus, GameEvent, MusicId, SfxId};

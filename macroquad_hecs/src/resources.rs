@@ -4,7 +4,7 @@ use macroquad::miniquad::EventHandler;
 use macroquad::prelude::{Texture2D, Vec2};
 
 use crate::assets::LoadedAssets;
-use crate::audio::{MusicManager, SfxManager};
+use crate::sfx::{MusicManager, SfxManager};
 use crate::components::TextureId;
 use crate::constants::PLAYER_START_LIVES;
 use crate::events::EventBus;

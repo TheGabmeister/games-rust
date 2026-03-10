@@ -1,7 +1,7 @@
 use hecs::{Entity, World};
 use macroquad::prelude::*;
 
-use crate::audio::SfxManager;
+use crate::sfx::SfxManager;
 use crate::components::*;
 use crate::constants::*;
 use crate::events::SfxId;

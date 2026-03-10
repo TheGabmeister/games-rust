@@ -1,7 +1,6 @@
 //#![windows_subsystem = "windows"] // Suppress the console window on Windows release builds.
 #![cfg_attr(debug_assertions, allow(unused))] // Suppress unused-code warnings in debug builds.
 
-mod audio;
 mod assets;
 mod components;
 mod constants;
