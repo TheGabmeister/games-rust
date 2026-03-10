@@ -3,7 +3,7 @@ use macroquad::prelude::*;
 
 use crate::components::*;
 use crate::constants::*;
-use crate::events::{GameEvent, MusicId, SfxId};
+use crate::events::{GameEvent, MusicId};
 use crate::prefabs;
 use crate::resources::Resources;
 
@@ -147,6 +147,7 @@ pub fn system_cull_offscreen(world: &mut World) {
 pub fn system_process_events(world: &mut World, res: &mut Resources) {
     let events = res.events.drain();
     let mut to_despawn: Vec<Entity> = Vec::new();
+    let mut player_died_this_tick = false;
 
     for event in events {
         match event {
@@ -157,11 +158,11 @@ pub fn system_process_events(world: &mut World, res: &mut Resources) {
 
             GameEvent::BulletHitPlayer { bullet } => {
                 to_despawn.push(bullet);
-                res.events.emit(GameEvent::PlayerHit);
+                apply_damage_to_player(world, res, &mut player_died_this_tick);
             }
 
             GameEvent::PlayerHit => {
-                apply_damage_to_player(world, res);
+                apply_damage_to_player(world, res, &mut player_died_this_tick);
             }
 
             GameEvent::EnemyDestroyed { .. } => {
@@ -236,50 +237,36 @@ fn apply_damage_to_enemy(
     enemy: Entity,
     to_despawn: &mut Vec<Entity>,
 ) {
-    let should_die = {
-        if let Ok(mut hp) = world.get::<&mut Health>(enemy) {
-            hp.current -= 1;
-            hp.is_dead()
-        } else {
-            false
-        }
-        // hp RefMut is dropped here — world is free again
-    };
-
-    if should_die {
-        // Read components before despawn; borrows auto-drop at end of let.
-        let kind = world.get::<&Enemy>(enemy).ok().map(|e| e.kind);
-        let score = world.get::<&ScoreValue>(enemy).ok().map(|s| s.0).unwrap_or(0);
-
-        if let Some(kind) = kind {
-            res.events.emit(GameEvent::EnemyDestroyed { entity: enemy, kind });
-        }
-        res.score += score;
-        to_despawn.push(enemy);
+    // Ignore duplicate hit events for enemies already marked for despawn this tick.
+    if to_despawn.contains(&enemy) {
+        return;
     }
+
+    // One-hit kill: any hit destroys entities that are actual Enemy actors.
+    let kind = match world.get::<&Enemy>(enemy) {
+        Ok(enemy_data) => enemy_data.kind,
+        Err(_) => return,
+    };
+    let score = world.get::<&ScoreValue>(enemy).ok().map(|s| s.0).unwrap_or(0);
+
+    res.events.emit(GameEvent::EnemyDestroyed { entity: enemy, kind });
+    res.score += score;
+    to_despawn.push(enemy);
 }
 
-fn apply_damage_to_player(world: &mut World, res: &mut Resources) {
-    // Include Entity in query type so .iter() yields (Entity, &Player, &Health).
-    let player_entity: Option<Entity> = world
-        .query::<(Entity, &Player, &Health)>()
-        .iter()
-        .next()
-        .map(|(e, _p, _h)| e);
+fn apply_damage_to_player(
+    world: &mut World,
+    res: &mut Resources,
+    player_died_this_tick: &mut bool,
+) {
+    if *player_died_this_tick {
+        return;
+    }
 
-    if let Some(entity) = player_entity {
-        let should_die = {
-            if let Ok(mut hp) = world.get::<&mut Health>(entity) {
-                hp.current -= 1;
-                hp.is_dead()
-            } else {
-                false
-            }
-            // hp RefMut dropped here
-        };
-
-        if should_die {
-            res.events.emit(GameEvent::PlayerDied);
-        }
+    // One-hit kill: if a player exists, this hit kills them.
+    let player_exists = world.query::<&Player>().iter().next().is_some();
+    if player_exists {
+        res.events.emit(GameEvent::PlayerDied);
+        *player_died_this_tick = true;
     }
 }

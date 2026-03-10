@@ -56,7 +56,7 @@ impl Game {
         // 5. Collision → events
         systems::system_collision(&mut self.world, &mut self.res);
 
-        // 6. React to events (health, score, despawns, re-emits)
+        // 6. React to events (score, despawns, re-emits)
         systems::system_process_events(&mut self.world, &mut self.res);
 
         // 7. Debug toggle

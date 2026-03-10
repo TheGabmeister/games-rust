@@ -20,7 +20,6 @@ pub fn spawn_player(world: &mut World, _res: &Resources) -> Entity {
             mask: LAYER_ENEMY | LAYER_ENEMY_BULLET | LAYER_PICKUP,
         },
         Player,
-        Health::new(PLAYER_MAX_HP),
         Weapon::new(PLAYER_FIRE_RATE, PLAYER_BULLET_SPEED),
         DrawLayer(DRAW_PLAYER),
     ))
@@ -31,11 +30,11 @@ pub fn spawn_player(world: &mut World, _res: &Resources) -> Entity {
 // ---------------------------------------------------------------------------
 
 pub fn spawn_enemy(world: &mut World, kind: EnemyKind, pos: Vec2) -> Entity {
-    let (texture, speed, hp, score) = match kind {
-        EnemyKind::Black => (TextureId::EnemyShipBlack, ENEMY_SPEED_BLACK, 2, SCORE_ENEMY_BLACK),
-        EnemyKind::Blue => (TextureId::EnemyShipBlue, ENEMY_SPEED_BLUE, 3, SCORE_ENEMY_BLUE),
-        EnemyKind::Green => (TextureId::EnemyShipGreen, ENEMY_SPEED_GREEN, 1, SCORE_ENEMY_GREEN),
-        EnemyKind::Red => (TextureId::EnemyShipRed, ENEMY_SPEED_RED, 4, SCORE_ENEMY_RED),
+    let (texture, speed, score) = match kind {
+        EnemyKind::Black => (TextureId::EnemyShipBlack, ENEMY_SPEED_BLACK, SCORE_ENEMY_BLACK),
+        EnemyKind::Blue => (TextureId::EnemyShipBlue, ENEMY_SPEED_BLUE, SCORE_ENEMY_BLUE),
+        EnemyKind::Green => (TextureId::EnemyShipGreen, ENEMY_SPEED_GREEN, SCORE_ENEMY_GREEN),
+        EnemyKind::Red => (TextureId::EnemyShipRed, ENEMY_SPEED_RED, SCORE_ENEMY_RED),
     };
 
     world.spawn((
@@ -48,7 +47,6 @@ pub fn spawn_enemy(world: &mut World, kind: EnemyKind, pos: Vec2) -> Entity {
             mask: LAYER_PLAYER | LAYER_PLAYER_BULLET,
         },
         Enemy { kind },
-        Health::new(hp),
         Weapon::new(ENEMY_FIRE_RATE, ENEMY_BULLET_SPEED),
         ScoreValue(score),
         DrawLayer(DRAW_ENEMY),
