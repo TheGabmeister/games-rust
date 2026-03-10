@@ -3,7 +3,7 @@ use std::cell::RefCell;
 use hecs::{Entity, World};
 use macroquad::prelude::*;
 
-use crate::components::{ActivePowerup, BoxCollider, CircleCollider, CollisionLayer, Pickup, Transform};
+use crate::components::{ActivePowerup, BoxCollider, CircleCollider, CollisionLayer, Enemy, Pickup, Transform};
 use crate::constants::*;
 use crate::events::{EventBus, GameEvent};
 
@@ -159,13 +159,13 @@ fn emit_event(
     let b_is_pickup = (lb.member & LAYER_PICKUP) != 0;
 
     if a_is_player_bullet && b_is_enemy {
-        events.emit(GameEvent::EnemyDestroyed {
-
-        });
+        if let Ok(enemy) = world.get::<&Enemy>(eb) {
+            events.emit(GameEvent::EnemyDestroyed { entity: eb, kind: enemy.kind });
+        }
     } else if b_is_player_bullet && a_is_enemy {
-        events.emit(GameEvent::EnemyDestroyed {
-
-        });
+        if let Ok(enemy) = world.get::<&Enemy>(ea) {
+            events.emit(GameEvent::EnemyDestroyed { entity: ea, kind: enemy.kind });
+        }
     } else if a_is_enemy_bullet && b_is_player {
         events.emit(GameEvent::PlayerHit { source: ea });
     } else if b_is_enemy_bullet && a_is_player {
