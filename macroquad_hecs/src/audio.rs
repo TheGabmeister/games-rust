@@ -1,6 +1,6 @@
 use macroquad::audio::{play_sound, set_sound_volume, stop_sound, PlaySoundParams};
 
-use crate::events::MusicCommand;
+use crate::events::{MusicCommand, MusicId};
 use crate::resources::Resources;
 
 pub struct SfxManager {
@@ -15,12 +15,12 @@ impl SfxManager {
 }
 
 pub struct MusicManager {
-  
+    pub current: Option<MusicId>,
 }
 
 
 impl MusicManager {
     pub fn new() -> Self {
-        Self {}
+        Self { current: None }
     }
 }
