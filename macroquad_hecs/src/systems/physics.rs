@@ -3,7 +3,7 @@ use std::cell::RefCell;
 use hecs::{Entity, World};
 use macroquad::prelude::*;
 
-use crate::components::{BoxCollider, CircleCollider, CollisionLayer, Transform};
+use crate::components::{ActivePowerup, BoxCollider, CircleCollider, CollisionLayer, Pickup, Transform};
 use crate::constants::*;
 use crate::events::GameEvent;
 use crate::resources::Resources;
@@ -104,7 +104,7 @@ pub fn system_collision(world: &mut World, res: &mut Resources) {
                 if layers_interact(a.layer, b.layer)
                     && aabb_overlaps(a.pos, a.half, b.pos, b.half)
                 {
-                    emit_event(a.entity, a.layer, b.entity, b.layer, res);
+                    emit_event(a.entity, a.layer, b.entity, b.layer, world, res);
                 }
             }
         }
@@ -117,7 +117,7 @@ pub fn system_collision(world: &mut World, res: &mut Resources) {
                 if layers_interact(a.layer, b.layer)
                     && circles_overlap(a.pos, a.radius, b.pos, b.radius)
                 {
-                    emit_event(a.entity, a.layer, b.entity, b.layer, res);
+                    emit_event(a.entity, a.layer, b.entity, b.layer, world, res);
                 }
             }
         }
@@ -128,7 +128,7 @@ pub fn system_collision(world: &mut World, res: &mut Resources) {
                 if layers_interact(c.layer, a.layer)
                     && circle_aabb_overlaps(c.pos, c.radius, a.pos, a.half)
                 {
-                    emit_event(c.entity, c.layer, a.entity, a.layer, res);
+                    emit_event(c.entity, c.layer, a.entity, a.layer, world, res);
                 }
             }
         }
@@ -144,6 +144,7 @@ fn emit_event(
     la: CollisionLayer,
     eb: Entity,
     lb: CollisionLayer,
+    world: &World,
     res: &mut Resources,
 ) {
     // Identify roles by layer membership
@@ -163,8 +164,17 @@ fn emit_event(
     } else if b_is_enemy_bullet {
         res.events.emit(GameEvent::BulletHitPlayer { bullet: eb });
     } else if a_is_pickup {
-        res.events.emit(GameEvent::PickupTouched { pickup: ea });
+        emit_pickup_event(world, res, ea);
     } else if b_is_pickup {
-        res.events.emit(GameEvent::PickupTouched { pickup: eb });
+        emit_pickup_event(world, res, eb);
+    }
+}
+
+fn emit_pickup_event(world: &World, res: &mut Resources, entity: Entity) {
+    if let Some(effect) = world.get::<&ActivePowerup>(entity).ok().map(|p| p.effect) {
+        res.events
+            .emit(GameEvent::PowerupCollected { entity, effect });
+    } else if let Some(kind) = world.get::<&Pickup>(entity).ok().map(|p| p.kind) {
+        res.events.emit(GameEvent::PickupCollected { entity, kind });
     }
 }

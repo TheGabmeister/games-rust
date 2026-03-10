@@ -169,21 +169,6 @@ pub fn system_process_events(world: &mut World, res: &mut Resources) {
                 
             }
 
-            GameEvent::PickupTouched { pickup } => {
-                // Read components; borrows from world.get() are dropped at end of block.
-                let kind = world.get::<&Pickup>(pickup).ok().map(|p| p.kind);
-                let powerup_effect =
-                    world.get::<&ActivePowerup>(pickup).ok().map(|p| p.effect);
-
-                if let Some(effect) = powerup_effect {
-                    res.events
-                        .emit(GameEvent::PowerupCollected { entity: pickup, effect });
-                } else if let Some(kind) = kind {
-                    res.events
-                        .emit(GameEvent::PickupCollected { entity: pickup, kind });
-                }
-            }
-
             GameEvent::PickupCollected { entity, kind } => {
                 to_despawn.push(entity);
                 match kind {

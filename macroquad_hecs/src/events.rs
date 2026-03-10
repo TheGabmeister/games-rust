@@ -38,8 +38,6 @@ pub enum GameEvent {
     PlayerHit,
     PlayerCaptured { boss: Entity },
     EnemyDestroyed { entity: Entity, kind: EnemyKind },
-    /// Raw collision event — system_process_events looks up the Pickup component.
-    PickupTouched { pickup: Entity },
     PickupCollected { entity: Entity, kind: PickupKind },
     PowerupCollected { entity: Entity, effect: PowerupEffect },
     BulletHitEnemy { bullet: Entity, enemy: Entity },
@@ -59,6 +57,10 @@ pub struct EventBus {
 impl EventBus {
     pub fn emit(&mut self, event: GameEvent) {
         self.queue.push(event);
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.queue.is_empty()
     }
 
     /// Drains and returns all pending events, leaving the queue empty.
