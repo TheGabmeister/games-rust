@@ -5,8 +5,7 @@ use macroquad::prelude::*;
 
 use crate::components::{ActivePowerup, BoxCollider, CircleCollider, CollisionLayer, Pickup, Transform};
 use crate::constants::*;
-use crate::events::GameEvent;
-use crate::resources::Resources;
+use crate::events::{EventBus, GameEvent};
 
 // ---------------------------------------------------------------------------
 // Geometry helpers
@@ -62,9 +61,9 @@ thread_local! {
 // Main collision system
 // ---------------------------------------------------------------------------
 
-/// Tests all collidable entity pairs and emits events via res.events.
+/// Tests all collidable entity pairs and emits events via the EventBus.
 /// Uses two-pass (snapshot → test) to avoid borrow conflicts with hecs.
-pub fn system_collision(world: &mut World, res: &mut Resources) {
+pub fn system_collision(world: &mut World, events: &mut EventBus) {
     SCRATCH.with(|s| {
         let (aabbs, circles) = &mut *s.borrow_mut();
 
@@ -104,7 +103,7 @@ pub fn system_collision(world: &mut World, res: &mut Resources) {
                 if layers_interact(a.layer, b.layer)
                     && aabb_overlaps(a.pos, a.half, b.pos, b.half)
                 {
-                    emit_event(a.entity, a.layer, b.entity, b.layer, world, res);
+                    emit_event(a.entity, a.layer, b.entity, b.layer, world, events);
                 }
             }
         }
@@ -117,7 +116,7 @@ pub fn system_collision(world: &mut World, res: &mut Resources) {
                 if layers_interact(a.layer, b.layer)
                     && circles_overlap(a.pos, a.radius, b.pos, b.radius)
                 {
-                    emit_event(a.entity, a.layer, b.entity, b.layer, world, res);
+                    emit_event(a.entity, a.layer, b.entity, b.layer, world, events);
                 }
             }
         }
@@ -128,7 +127,7 @@ pub fn system_collision(world: &mut World, res: &mut Resources) {
                 if layers_interact(c.layer, a.layer)
                     && circle_aabb_overlaps(c.pos, c.radius, a.pos, a.half)
                 {
-                    emit_event(c.entity, c.layer, a.entity, a.layer, world, res);
+                    emit_event(c.entity, c.layer, a.entity, a.layer, world, events);
                 }
             }
         }
@@ -145,7 +144,7 @@ fn emit_event(
     eb: Entity,
     lb: CollisionLayer,
     world: &World,
-    res: &mut Resources,
+    events: &mut EventBus,
 ) {
     // Identify roles by layer membership
     let a_is_player_bullet = (la.member & LAYER_PLAYER_BULLET) != 0;
@@ -156,25 +155,24 @@ fn emit_event(
     let b_is_pickup = (lb.member & LAYER_PICKUP) != 0;
 
     if a_is_player_bullet {
-        res.events.emit(GameEvent::BulletHitEnemy { bullet: ea, enemy: eb });
+        events.emit(GameEvent::BulletHitEnemy { bullet: ea, enemy: eb });
     } else if b_is_player_bullet {
-        res.events.emit(GameEvent::BulletHitEnemy { bullet: eb, enemy: ea });
+        events.emit(GameEvent::BulletHitEnemy { bullet: eb, enemy: ea });
     } else if a_is_enemy_bullet {
-        res.events.emit(GameEvent::BulletHitPlayer { bullet: ea });
+        events.emit(GameEvent::BulletHitPlayer { bullet: ea });
     } else if b_is_enemy_bullet {
-        res.events.emit(GameEvent::BulletHitPlayer { bullet: eb });
+        events.emit(GameEvent::BulletHitPlayer { bullet: eb });
     } else if a_is_pickup {
-        emit_pickup_event(world, res, ea);
+        emit_pickup_event(world, events, ea);
     } else if b_is_pickup {
-        emit_pickup_event(world, res, eb);
+        emit_pickup_event(world, events, eb);
     }
 }
 
-fn emit_pickup_event(world: &World, res: &mut Resources, entity: Entity) {
+fn emit_pickup_event(world: &World, events: &mut EventBus, entity: Entity) {
     if let Some(effect) = world.get::<&ActivePowerup>(entity).ok().map(|p| p.effect) {
-        res.events
-            .emit(GameEvent::PowerupCollected { entity, effect });
+        events.emit(GameEvent::PowerupCollected { entity, effect });
     } else if let Some(kind) = world.get::<&Pickup>(entity).ok().map(|p| p.kind) {
-        res.events.emit(GameEvent::PickupCollected { entity, kind });
+        events.emit(GameEvent::PickupCollected { entity, kind });
     }
 }

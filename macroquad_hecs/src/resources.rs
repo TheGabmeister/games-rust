@@ -9,22 +9,80 @@ use crate::constants::PLAYER_START_LIVES;
 use crate::events::EventBus;
 
 // ---------------------------------------------------------------------------
-// Resources — central shared state passed to all systems.
+// Resources root — grouped by domain to avoid god-object growth.
 // ---------------------------------------------------------------------------
 
 pub struct Resources {
-    // Asset storage (private — access via texture())
+    pub assets: Assets,
+    pub audio: AudioState,
+    pub state: GameState,
+    pub runtime: RuntimeIO,
+}
+
+// ---------------------------------------------------------------------------
+// Assets
+// ---------------------------------------------------------------------------
+
+pub struct Assets {
     textures: HashMap<TextureId, Texture2D>,
+}
 
-    pub sfx_manager: SfxManager,
-    pub music_manager: MusicManager,
+impl Assets {
+    /// Borrow a texture by ID. Panics if the texture was not loaded.
+    pub fn texture(&self, id: TextureId) -> &Texture2D {
+        self.textures
+            .get(&id)
+            .unwrap_or_else(|| panic!("Texture {id:?} not loaded"))
+    }
+}
 
-    /// Game state
+// ---------------------------------------------------------------------------
+// Audio
+// ---------------------------------------------------------------------------
+
+pub struct AudioState {
+    pub sfx: SfxManager,
+    pub music: MusicManager,
+}
+
+// ---------------------------------------------------------------------------
+// Game state
+// ---------------------------------------------------------------------------
+
+pub struct GameState {
     pub score: u32,
     pub lives: u32,
     pub high_score: u32,
     pub debug_mode: bool,
+}
 
+impl Default for GameState {
+    fn default() -> Self {
+        Self {
+            score: 0,
+            lives: PLAYER_START_LIVES,
+            high_score: 0,
+            debug_mode: false,
+        }
+    }
+}
+
+impl GameState {
+    pub fn add_score(&mut self, points: u32) {
+        self.score = self.score.saturating_add(points);
+    }
+
+    pub fn add_lives_clamped(&mut self, amount: u32, max_lives: u32) {
+        self.lives = self.lives.saturating_add(amount).min(max_lives);
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Runtime I/O
+// ---------------------------------------------------------------------------
+
+#[derive(Default)]
+pub struct RuntimeIO {
     /// Per-frame input snapshot (written by system_capture_input).
     pub input: InputState,
 
@@ -34,32 +92,21 @@ pub struct Resources {
 
 impl Resources {
     pub fn new(assets: LoadedAssets) -> Self {
+        let LoadedAssets {
+            textures,
+            sfx,
+            music,
+        } = assets;
+
         Self {
-            textures: assets.textures,
-            sfx_manager: SfxManager::new(assets.sfx),
-            music_manager: MusicManager::new(assets.music),
-            score: 0,
-            lives: PLAYER_START_LIVES,
-            high_score: 0,
-            debug_mode: false,
-            input: InputState::default(),
-            events: EventBus::default(),
+            assets: Assets { textures },
+            audio: AudioState {
+                sfx: SfxManager::new(sfx),
+                music: MusicManager::new(music),
+            },
+            state: GameState::default(),
+            runtime: RuntimeIO::default(),
         }
-    }
-
-    /// Borrow a texture by ID. Panics if the texture was not loaded.
-    pub fn texture(&self, id: TextureId) -> &Texture2D {
-        self.textures
-            .get(&id)
-            .unwrap_or_else(|| panic!("Texture {id:?} not loaded"))
-    }
-
-    pub fn add_score(&mut self, points: u32) {
-        self.score = self.score.saturating_add(points);
-    }
-
-    pub fn add_lives_clamped(&mut self, amount: u32, max_lives: u32) {
-        self.lives = self.lives.saturating_add(amount).min(max_lives);
     }
 }
 

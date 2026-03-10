@@ -3,20 +3,21 @@ use std::collections::{HashSet, VecDeque};
 use hecs::{Entity, World};
 use macroquad::prelude::*;
 
+use crate::audio::SfxManager;
 use crate::components::*;
 use crate::constants::*;
-use crate::events::{GameEvent, SfxId, MusicId};
+use crate::events::{EventBus, GameEvent, MusicId, SfxId};
 use crate::prefabs;
-use crate::resources::Resources;
+use crate::resources::{AudioState, GameState, InputState};
 
 // ---------------------------------------------------------------------------
 // Player movement
 // ---------------------------------------------------------------------------
 
-pub fn system_player_movement(world: &mut World, res: &Resources, dt: f32) {
+pub fn system_player_movement(world: &mut World, input: &InputState, dt: f32) {
     // query_mut yields Q::Item only — no entity in the tuple
     for (transform, _player) in world.query_mut::<(&mut Transform, &Player)>() {
-        transform.pos += res.input.move_axis * PLAYER_SPEED * dt;
+        transform.pos += input.move_axis * PLAYER_SPEED * dt;
         transform.pos.x = transform.pos.x.clamp(20.0, SCREEN_WIDTH - 20.0);
         transform.pos.y = transform.pos.y.clamp(20.0, SCREEN_HEIGHT - 20.0);
     }
@@ -26,13 +27,13 @@ pub fn system_player_movement(world: &mut World, res: &Resources, dt: f32) {
 // Player firing
 // ---------------------------------------------------------------------------
 
-pub fn system_player_fire(world: &mut World, res: &mut Resources, dt: f32) {
+pub fn system_player_fire(world: &mut World, input: &InputState, sfx: &SfxManager, dt: f32) {
     // Two-pass: collect fire info (drops query_mut borrow), then spawn.
     let mut fire_info: Option<(Vec2, f32)> = None;
 
     for (transform, weapon, _player) in world.query_mut::<(&Transform, &mut Weapon, &Player)>() {
         weapon.timer -= dt;
-        if res.input.fire_held && weapon.timer <= 0.0 {
+        if input.fire_held && weapon.timer <= 0.0 {
             fire_info = Some((transform.pos, weapon.bullet_speed));
             weapon.timer = weapon.cooldown;
         }
@@ -40,7 +41,7 @@ pub fn system_player_fire(world: &mut World, res: &mut Resources, dt: f32) {
 
     if let Some((pos, speed)) = fire_info {
         prefabs::spawn_player_bullet(world, pos - vec2(0.0, 20.0), speed);
-        res.sfx_manager.play_sound(SfxId::PlayerLaser);
+        sfx.play_sound(SfxId::PlayerLaser);
     }
 }
 
@@ -61,7 +62,7 @@ pub fn system_enemy_movement(world: &mut World) {
 // Enemy firing
 // ---------------------------------------------------------------------------
 
-pub fn system_enemy_fire(world: &mut World, res: &mut Resources, dt: f32) {
+pub fn system_enemy_fire(world: &mut World, sfx: &SfxManager, dt: f32) {
     // Two-pass: collect fire positions (drops query_mut borrow), then spawn.
     let mut fire_positions: Vec<(Vec2, f32)> = Vec::new();
 
@@ -75,7 +76,7 @@ pub fn system_enemy_fire(world: &mut World, res: &mut Resources, dt: f32) {
 
     for (pos, speed) in fire_positions {
         prefabs::spawn_enemy_bullet(world, pos + vec2(0.0, 20.0), speed);
-        res.sfx_manager.play_sound(SfxId::EnemyLaser);
+        sfx.play_sound(SfxId::EnemyLaser);
     }
 }
 
@@ -146,8 +147,13 @@ pub fn system_cull_offscreen(world: &mut World) {
 // Process events
 // ---------------------------------------------------------------------------
 
-pub fn system_process_events(world: &mut World, res: &mut Resources) {
-    let mut events: VecDeque<GameEvent> = res.events.drain().into();
+pub fn system_process_events(
+    world: &mut World,
+    state: &mut GameState,
+    events_bus: &mut EventBus,
+    audio: &mut AudioState,
+) {
+    let mut events: VecDeque<GameEvent> = events_bus.drain().into();
     let mut to_despawn: HashSet<Entity> = HashSet::new();
     let mut player_died_this_tick = false;
     let mut reset_requested = false;
@@ -156,16 +162,23 @@ pub fn system_process_events(world: &mut World, res: &mut Resources) {
         match event {
             GameEvent::BulletHitEnemy { bullet, enemy } => {
                 to_despawn.insert(bullet);
-                apply_damage_to_enemy(world, res, enemy, &mut to_despawn);
+                apply_damage_to_enemy(
+                    world,
+                    state,
+                    events_bus,
+                    &audio.sfx,
+                    enemy,
+                    &mut to_despawn,
+                );
             }
 
             GameEvent::BulletHitPlayer { bullet } => {
                 to_despawn.insert(bullet);
-                apply_damage_to_player(world, res, &mut player_died_this_tick);
+                apply_damage_to_player(world, events_bus, &audio.sfx, &mut player_died_this_tick);
             }
 
             GameEvent::PlayerHit => {
-                apply_damage_to_player(world, res, &mut player_died_this_tick);
+                apply_damage_to_player(world, events_bus, &audio.sfx, &mut player_died_this_tick);
             }
 
             GameEvent::EnemyDestroyed { .. } => {
@@ -174,7 +187,7 @@ pub fn system_process_events(world: &mut World, res: &mut Resources) {
 
             GameEvent::PickupCollected { entity, kind } => {
                 to_despawn.insert(entity);
-                apply_pickup_reward(res, kind);
+                apply_pickup_reward(state, kind);
                 
             }
 
@@ -186,30 +199,30 @@ pub fn system_process_events(world: &mut World, res: &mut Resources) {
             }
 
             GameEvent::PlayerDied => {
-                if res.lives > 0 {
-                    res.lives -= 1;
+                if state.lives > 0 {
+                    state.lives -= 1;
                 } else {
                     reset_requested = true;
                 }
             }
 
             GameEvent::GameStarted => {
-                res.music_manager.play_music(MusicId::Spaceshooter);
+                audio.music.play_music(MusicId::Spaceshooter);
             }
 
             GameEvent::PlayerCaptured { boss: _ } => {}
             GameEvent::StageCleared => {}
         }
 
-        if !res.events.is_empty() {
-            events.extend(res.events.drain());
+        if !events_bus.is_empty() {
+            events.extend(events_bus.drain());
         }
     }
 
     if reset_requested {
         world.clear();
-        prefabs::spawn_player(world, res);
-        res.score = 0;
+        prefabs::spawn_player(world);
+        state.score = 0;
         to_despawn.clear();
     }
 
@@ -224,7 +237,9 @@ pub fn system_process_events(world: &mut World, res: &mut Resources) {
 
 fn apply_damage_to_enemy(
     world: &mut World,
-    res: &mut Resources,
+    state: &mut GameState,
+    events: &mut EventBus,
+    sfx: &SfxManager,
     enemy: Entity,
     to_despawn: &mut HashSet<Entity>,
 ) {
@@ -240,15 +255,16 @@ fn apply_damage_to_enemy(
     };
     let score = world.get::<&ScoreValue>(enemy).ok().map(|s| s.0).unwrap_or(0);
 
-    res.sfx_manager.play_sound(SfxId::EnemyDestroyed);
-    res.events.emit(GameEvent::EnemyDestroyed { entity: enemy, kind });
-    res.add_score(score);
+    sfx.play_sound(SfxId::EnemyDestroyed);
+    events.emit(GameEvent::EnemyDestroyed { entity: enemy, kind });
+    state.add_score(score);
     to_despawn.insert(enemy);
 }
 
 fn apply_damage_to_player(
     world: &mut World,
-    res: &mut Resources,
+    events: &mut EventBus,
+    sfx: &SfxManager,
     player_died_this_tick: &mut bool,
 ) {
     if *player_died_this_tick {
@@ -258,15 +274,15 @@ fn apply_damage_to_player(
     // One-hit kill: if a player exists, this hit kills them.
     let player_exists = world.query::<&Player>().iter().next().is_some();
     if player_exists {
-        res.events.emit(GameEvent::PlayerDied);
-        res.sfx_manager.play_sound(SfxId::PlayerDied);
+        events.emit(GameEvent::PlayerDied);
+        sfx.play_sound(SfxId::PlayerDied);
         *player_died_this_tick = true;
     }
 }
 
-fn apply_pickup_reward(res: &mut Resources, kind: PickupKind) {
+fn apply_pickup_reward(state: &mut GameState, kind: PickupKind) {
     match kind {
-        PickupKind::Life => res.add_lives_clamped(1, PLAYER_MAX_LIVES),
-        PickupKind::Star => res.add_score(SCORE_PICKUP_STAR),
+        PickupKind::Life => state.add_lives_clamped(1, PLAYER_MAX_LIVES),
+        PickupKind::Star => state.add_score(SCORE_PICKUP_STAR),
     }
 }

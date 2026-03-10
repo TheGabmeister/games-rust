@@ -3,10 +3,10 @@ use macroquad::prelude::*;
 
 use crate::components::{DrawLayer, Sprite, TextureId, Transform};
 use crate::constants::{SCREEN_WIDTH};
-use crate::resources::Resources;
+use crate::resources::{Assets, GameState};
 
 /// Draw all entities that have Transform + Sprite + DrawLayer, sorted back-to-front.
-pub fn draw(world: &World, res: &Resources) {
+pub fn draw(world: &World, assets: &Assets) {
     clear_background(Color::from_hex(0x0a0a1a));
 
     // Collect drawables: (layer, pos, rot, texture_id, tint)
@@ -22,7 +22,7 @@ pub fn draw(world: &World, res: &Resources) {
     drawables.sort_unstable_by_key(|(layer, ..)| *layer);
 
     for (_, pos, rot, texture_id, tint) in drawables {
-        let tex = res.texture(texture_id);
+        let tex = assets.texture(texture_id);
         let w = tex.width();
         let h = tex.height();
 
@@ -41,11 +41,11 @@ pub fn draw(world: &World, res: &Resources) {
 }
 
 /// Overlay HUD (score, lives, high score).
-pub fn draw_hud(res: &Resources) {
-    draw_text(&format!("SCORE: {}", res.score), 10.0, 24.0, 22.0, WHITE);
-    draw_text(&format!("LIVES: {}", res.lives), 10.0, 50.0, 22.0, WHITE);
+pub fn draw_hud(state: &GameState) {
+    draw_text(&format!("SCORE: {}", state.score), 10.0, 24.0, 22.0, WHITE);
+    draw_text(&format!("LIVES: {}", state.lives), 10.0, 50.0, 22.0, WHITE);
     draw_text(
-        &format!("BEST: {}", res.high_score),
+        &format!("BEST: {}", state.high_score),
         SCREEN_WIDTH - 160.0,
         24.0,
         22.0,

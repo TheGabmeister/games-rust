@@ -3,13 +3,12 @@ use macroquad::prelude::*;
 
 use crate::components::*;
 use crate::constants::*;
-use crate::resources::Resources;
 
 // ---------------------------------------------------------------------------
 // Player
 // ---------------------------------------------------------------------------
 
-pub fn spawn_player(world: &mut World, _res: &Resources) -> Entity {
+pub fn spawn_player(world: &mut World) -> Entity {
     world.spawn((
         Transform::at(SCREEN_WIDTH * 0.5, SCREEN_HEIGHT - 80.0),
         Velocity::zero(),
