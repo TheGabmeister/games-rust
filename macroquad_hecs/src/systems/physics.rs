@@ -1,3 +1,5 @@
+use std::cell::RefCell;
+
 use hecs::{Entity, World};
 use macroquad::prelude::*;
 
@@ -48,72 +50,89 @@ struct CircleEntry {
 }
 
 // ---------------------------------------------------------------------------
+// Per-frame scratch buffers (reused across calls to avoid allocation)
+// ---------------------------------------------------------------------------
+
+thread_local! {
+    static SCRATCH: RefCell<(Vec<AabbEntry>, Vec<CircleEntry>)> =
+        RefCell::new((Vec::new(), Vec::new()));
+}
+
+// ---------------------------------------------------------------------------
 // Main collision system
 // ---------------------------------------------------------------------------
 
 /// Tests all collidable entity pairs and emits events via res.events.
 /// Uses two-pass (snapshot → test) to avoid borrow conflicts with hecs.
 pub fn system_collision(world: &mut World, res: &mut Resources) {
-    // Pass 1: snapshot collidable entities (releases QueryBorrow)
-    let mut aabbs: Vec<AabbEntry> = world
-        .query::<(Entity, &Transform, &BoxCollider, &CollisionLayer)>()
-        .iter()
-        .map(|(entity, t, c, l)| AabbEntry {
-            entity,
-            pos: t.pos,
-            half: c.half,
-            layer: *l,
-        })
-        .collect();
+    SCRATCH.with(|s| {
+        let (aabbs, circles) = &mut *s.borrow_mut();
 
-    let mut circles: Vec<CircleEntry> = world
-        .query::<(Entity, &Transform, &CircleCollider, &CollisionLayer)>()
-        .iter()
-        .map(|(entity, t, c, l)| CircleEntry {
-            entity,
-            pos: t.pos,
-            radius: c.radius,
-            layer: *l,
-        })
-        .collect();
+        // Pass 1: snapshot collidable entities (releases QueryBorrow)
+        aabbs.clear();
+        aabbs.extend(
+            world
+                .query::<(Entity, &Transform, &BoxCollider, &CollisionLayer)>()
+                .iter()
+                .map(|(entity, t, c, l)| AabbEntry {
+                    entity,
+                    pos: t.pos,
+                    half: c.half,
+                    layer: *l,
+                }),
+        );
 
-    // Pass 2: test pairs and emit events
-    // AABB vs AABB
-    for i in 0..aabbs.len() {
-        for j in (i + 1)..aabbs.len() {
-            let a = &aabbs[i];
-            let b = &aabbs[j];
-            if layers_interact(a.layer, b.layer)
-                && aabb_overlaps(a.pos, a.half, b.pos, b.half)
-            {
-                emit_event(a.entity, a.layer, b.entity, b.layer, res);
+        circles.clear();
+        circles.extend(
+            world
+                .query::<(Entity, &Transform, &CircleCollider, &CollisionLayer)>()
+                .iter()
+                .map(|(entity, t, c, l)| CircleEntry {
+                    entity,
+                    pos: t.pos,
+                    radius: c.radius,
+                    layer: *l,
+                }),
+        );
+
+        // Pass 2: test pairs and emit events
+        // AABB vs AABB
+        for i in 0..aabbs.len() {
+            for j in (i + 1)..aabbs.len() {
+                let a = &aabbs[i];
+                let b = &aabbs[j];
+                if layers_interact(a.layer, b.layer)
+                    && aabb_overlaps(a.pos, a.half, b.pos, b.half)
+                {
+                    emit_event(a.entity, a.layer, b.entity, b.layer, res);
+                }
             }
         }
-    }
 
-    // Circle vs Circle
-    for i in 0..circles.len() {
-        for j in (i + 1)..circles.len() {
-            let a = &circles[i];
-            let b = &circles[j];
-            if layers_interact(a.layer, b.layer)
-                && circles_overlap(a.pos, a.radius, b.pos, b.radius)
-            {
-                emit_event(a.entity, a.layer, b.entity, b.layer, res);
+        // Circle vs Circle
+        for i in 0..circles.len() {
+            for j in (i + 1)..circles.len() {
+                let a = &circles[i];
+                let b = &circles[j];
+                if layers_interact(a.layer, b.layer)
+                    && circles_overlap(a.pos, a.radius, b.pos, b.radius)
+                {
+                    emit_event(a.entity, a.layer, b.entity, b.layer, res);
+                }
             }
         }
-    }
 
-    // Circle vs AABB
-    for c in &circles {
-        for a in &aabbs {
-            if layers_interact(c.layer, a.layer)
-                && circle_aabb_overlaps(c.pos, c.radius, a.pos, a.half)
-            {
-                emit_event(c.entity, c.layer, a.entity, a.layer, res);
+        // Circle vs AABB
+        for c in circles.iter() {
+            for a in aabbs.iter() {
+                if layers_interact(c.layer, a.layer)
+                    && circle_aabb_overlaps(c.pos, c.radius, a.pos, a.half)
+                {
+                    emit_event(c.entity, c.layer, a.entity, a.layer, res);
+                }
             }
         }
-    }
+    });
 }
 
 fn layers_interact(a: CollisionLayer, b: CollisionLayer) -> bool {

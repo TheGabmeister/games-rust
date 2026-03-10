@@ -1,22 +1,19 @@
 use std::collections::HashMap;
 
-use macroquad::audio::Sound;
 use macroquad::prelude::{Texture2D, Vec2};
 
 use crate::assets::LoadedAssets;
-use crate::audio::SfxManager;
-use crate::audio::MusicManager;
+use crate::audio::{MusicManager, SfxManager};
 use crate::components::TextureId;
-use crate::events::{EventBus, SfxId};
+use crate::events::EventBus;
 
 // ---------------------------------------------------------------------------
 // Resources — central shared state passed to all systems.
 // ---------------------------------------------------------------------------
 
 pub struct Resources {
-    // Asset storage (private — access via texture() / sfx())
+    // Asset storage (private — access via texture())
     textures: HashMap<TextureId, Texture2D>,
-    sfx: HashMap<SfxId, Sound>,
 
     pub sfx_manager: SfxManager,
     pub music_manager: MusicManager,
@@ -38,8 +35,7 @@ impl Resources {
     pub fn new(assets: LoadedAssets) -> Self {
         Self {
             textures: assets.textures,
-            sfx: assets.sfx,
-            sfx_manager: SfxManager::new(),
+            sfx_manager: SfxManager::new(assets.sfx),
             music_manager: MusicManager::new(assets.music),
             score: 0,
             lives: 3,

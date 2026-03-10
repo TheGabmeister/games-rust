@@ -3,7 +3,7 @@ use macroquad::prelude::*;
 
 use crate::components::*;
 use crate::constants::*;
-use crate::events::{GameEvent, MusicId};
+use crate::events::{GameEvent, SfxId, MusicId};
 use crate::prefabs;
 use crate::resources::Resources;
 
@@ -38,7 +38,7 @@ pub fn system_player_fire(world: &mut World, res: &mut Resources, dt: f32) {
 
     if let Some((pos, speed)) = fire_info {
         prefabs::spawn_player_bullet(world, pos - vec2(0.0, 20.0), speed);
-        
+        res.sfx_manager.play_sound(SfxId::PlayerLaser);
     }
 }
 
@@ -73,7 +73,7 @@ pub fn system_enemy_fire(world: &mut World, res: &mut Resources, dt: f32) {
 
     for (pos, speed) in fire_positions {
         prefabs::spawn_enemy_bullet(world, pos + vec2(0.0, 20.0), speed);
-        
+        res.sfx_manager.play_sound(SfxId::EnemyLaser);
     }
 }
 
@@ -249,6 +249,7 @@ fn apply_damage_to_enemy(
     };
     let score = world.get::<&ScoreValue>(enemy).ok().map(|s| s.0).unwrap_or(0);
 
+    res.sfx_manager.play_sound(SfxId::EnemyDestroyed);
     res.events.emit(GameEvent::EnemyDestroyed { entity: enemy, kind });
     res.score += score;
     to_despawn.push(enemy);
@@ -267,6 +268,7 @@ fn apply_damage_to_player(
     let player_exists = world.query::<&Player>().iter().next().is_some();
     if player_exists {
         res.events.emit(GameEvent::PlayerDied);
+        res.sfx_manager.play_sound(SfxId::PlayerDied);
         *player_died_this_tick = true;
     }
 }

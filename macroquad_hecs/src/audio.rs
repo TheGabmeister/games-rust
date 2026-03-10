@@ -1,17 +1,22 @@
 use std::collections::HashMap;
 
-use macroquad::audio::{play_sound, set_sound_volume, stop_sound, PlaySoundParams, Sound};
+use macroquad::audio::{play_sound, PlaySoundParams, Sound};
 
-use crate::events::MusicId;
+use crate::events::{MusicId, SfxId};
 
 pub struct SfxManager {
-
+    sounds: HashMap<SfxId, Sound>,
 }
 
-
 impl SfxManager {
-    pub fn new() -> Self {
-        Self {}
+    pub fn new(sounds: HashMap<SfxId, Sound>) -> Self {
+        Self { sounds }
+    }
+
+    pub fn play_sound(&self, id: SfxId) {
+        if let Some(s) = self.sounds.get(&id) {
+            play_sound(s, PlaySoundParams { looped: false, volume: 1.0 });
+        }
     }
 }
 
@@ -20,16 +25,15 @@ pub struct MusicManager {
     sounds: HashMap<MusicId, Sound>,
 }
 
-
 impl MusicManager {
     pub fn new(sounds: HashMap<MusicId, Sound>) -> Self {
         Self { current: None, sounds }
     }
 
     pub fn play_music(&mut self, id: MusicId) {
-        println!("play_music id: {:?}", id);
-        play_sound(self.sounds.get(&id).unwrap(), PlaySoundParams { looped: true, volume: 1.0 });
-  
+        if let Some(s) = self.sounds.get(&id) {
+            play_sound(s, PlaySoundParams { looped: true, volume: 1.0 });
+        }
+        self.current = Some(id);
     }
-
 }
