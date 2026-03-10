@@ -15,7 +15,8 @@ use crate::events::EventBus;
 
 pub struct Resources {
     pub textures: Textures,
-    pub audio: AudioState,
+    pub sfx: SfxManager,
+    pub music: MusicManager,
     pub state: GameState,
     pub input: InputState,
     pub events: EventBus,
@@ -31,10 +32,8 @@ impl Resources {
 
         Self {
             textures: Textures { textures },
-            audio: AudioState {
-                sfx: SfxManager::new(sfx),
-                music: MusicManager::new(music),
-            },
+            sfx: SfxManager::new(sfx),
+            music: MusicManager::new(music),
             state: GameState::default(),
             input: InputState::default(),
             events: EventBus::default(),
@@ -53,11 +52,6 @@ impl Textures {
             .get(&id)
             .unwrap_or_else(|| panic!("Texture {id:?} not loaded"))
     }
-}
-
-pub struct AudioState {
-    pub sfx: SfxManager,
-    pub music: MusicManager,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

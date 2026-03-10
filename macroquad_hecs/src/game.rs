@@ -62,10 +62,10 @@ impl Game {
 
         if self.res.state.phase == GamePhase::Playing {
             systems::system_player_movement(&mut self.world, &self.res.input, dt);
-            systems::system_player_fire(&mut self.world, &self.res.input, &self.res.audio.sfx, dt);
+            systems::system_player_fire(&mut self.world, &self.res.input, &self.res.sfx, dt);
 
             systems::system_enemy_movement(&mut self.world);
-            systems::system_enemy_fire(&mut self.world, &self.res.audio.sfx, dt);
+            systems::system_enemy_fire(&mut self.world, &self.res.sfx, dt);
 
             systems::system_integrate(&mut self.world, dt);
             systems::system_cull_offscreen(&mut self.world);
@@ -78,7 +78,8 @@ impl Game {
                 &mut self.world,
                 &mut self.res.state,
                 &mut self.res.events,
-                &mut self.res.audio,
+                &mut self.res.sfx,
+                &mut self.res.music,
             );
         } else if self.res.input.confirm_pressed {
             self.restart_run();

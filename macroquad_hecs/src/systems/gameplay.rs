@@ -3,12 +3,11 @@ use std::collections::{HashSet, VecDeque};
 use hecs::{Entity, World};
 use macroquad::prelude::*;
 
-use crate::audio::SfxManager;
 use crate::components::*;
 use crate::constants::*;
 use crate::events::{EventBus, GameEvent, MusicId, SfxId};
 use crate::prefabs;
-use crate::resources::{AudioState, GamePhase, GameState, InputState};
+use crate::resources::{SfxManager, MusicManager, GamePhase, GameState, InputState};
 
 // ---------------------------------------------------------------------------
 // Player movement
@@ -151,7 +150,8 @@ pub fn system_process_events(
     world: &mut World,
     state: &mut GameState,
     events_bus: &mut EventBus,
-    audio: &mut AudioState,
+    sfx: &mut SfxManager,
+    music: &mut MusicManager,
 ) {
     let mut events: VecDeque<GameEvent> = events_bus.drain().into();
     let mut to_despawn: HashSet<Entity> = HashSet::new();
@@ -165,14 +165,14 @@ pub fn system_process_events(
                     world,
                     state,
                     &mut events,
-                    &audio.sfx,
+                    &sfx,
                     enemy,
                     &mut to_despawn,
                 );
             }
 
             GameEvent::PlayerHit { source } => {
-                apply_damage_to_player(world, &mut events, &audio.sfx, &mut player_died_this_tick);
+                apply_damage_to_player(world, &mut events, &sfx, &mut player_died_this_tick);
                 if world.get::<&Bullet>(source).is_ok() || world.get::<&Enemy>(source).is_ok() {
                     to_despawn.insert(source);
                 }
@@ -206,7 +206,7 @@ pub fn system_process_events(
             }
 
             GameEvent::GameStarted => {
-                audio.music.play_music(MusicId::Spaceshooter);
+                music.play_music(MusicId::Spaceshooter);
             }
 
             GameEvent::PlayerCaptured { boss: _ } => {}
