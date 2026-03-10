@@ -13,21 +13,21 @@ use crate::events::EventBus;
 // ---------------------------------------------------------------------------
 
 pub struct Resources {
-    pub assets: Assets,
+    pub textures: Textures,
     pub audio: AudioState,
     pub state: GameState,
     pub runtime: RuntimeIO,
 }
 
 // ---------------------------------------------------------------------------
-// Assets
+// Textures
 // ---------------------------------------------------------------------------
 
-pub struct Assets {
+pub struct Textures {
     textures: HashMap<TextureId, Texture2D>,
 }
 
-impl Assets {
+impl Textures {
     /// Borrow a texture by ID. Panics if the texture was not loaded.
     pub fn texture(&self, id: TextureId) -> &Texture2D {
         self.textures
@@ -99,7 +99,7 @@ impl Resources {
         } = assets;
 
         Self {
-            assets: Assets { textures },
+            textures: Textures { textures },
             audio: AudioState {
                 sfx: SfxManager::new(sfx),
                 music: MusicManager::new(music),

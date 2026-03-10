@@ -77,7 +77,7 @@ impl Game {
 
     /// Render (called every frame — not fixed-timestep).
     pub fn draw(&self) {
-        render::draw(&self.world, &self.res.assets);
+        render::draw(&self.world, &self.res.textures);
 
         #[cfg(debug_assertions)]
         if self.res.state.debug_mode {
