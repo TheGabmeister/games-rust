@@ -1,20 +1,13 @@
-use std::collections::HashMap;
+use macroquad::prelude::Vec2;
 
-use macroquad::miniquad::EventHandler;
-use macroquad::prelude::{Texture2D, Vec2};
-
-use crate::assets::LoadedAssets;
-use crate::components::TextureId;
-use crate::constants::PLAYER_START_LIVES;
 use crate::events::EventBus;
-use crate::managers::{GameDirector, MusicManager, SfxManager};
+use crate::managers::{GameDirector, LoadedAssets, MusicManager, SfxManager};
 
 // ---------------------------------------------------------------------------
 // Resources root — grouped by domain to avoid god-object growth.
 // ---------------------------------------------------------------------------
 
 pub struct Resources {
-    pub textures: Textures,
     pub sfx: SfxManager,
     pub music: MusicManager,
     pub director: GameDirector,
@@ -31,26 +24,12 @@ impl Resources {
         } = assets;
 
         Self {
-            textures: Textures { textures },
             sfx: SfxManager::new(sfx),
             music: MusicManager::new(music),
             director: GameDirector::default(),
             input: InputState::default(),
             events: EventBus::default(),
         }
-    }
-}
-
-pub struct Textures {
-    textures: HashMap<TextureId, Texture2D>,
-}
-
-impl Textures {
-    /// Borrow a texture by ID. Panics if the texture was not loaded.
-    pub fn texture(&self, id: TextureId) -> &Texture2D {
-        self.textures
-            .get(&id)
-            .unwrap_or_else(|| panic!("Texture {id:?} not loaded"))
     }
 }
 

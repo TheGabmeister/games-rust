@@ -5,8 +5,8 @@ use hecs::{Entity, World};
 use crate::components::{Bullet, Enemy, PickupKind, ScoreValue};
 use crate::constants::{PLAYER_MAX_LIVES, SCORE_PICKUP_STAR};
 use crate::events::{EventBus, GameEvent, MusicId, SfxId};
-use crate::managers::{MusicManager, SfxManager};
-use crate::resources::{GameState, GameDirector};
+use crate::managers::{GameDirector, MusicManager, SfxManager};
+use crate::resources::GameState;
 
 // ---------------------------------------------------------------------------
 // Process events

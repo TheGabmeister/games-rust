@@ -1,3 +1,6 @@
+use crate::constants::PLAYER_START_LIVES;
+use crate::resources::GameState;
+
 pub struct GameDirector {
     pub score: u32,
     pub lives: u32,

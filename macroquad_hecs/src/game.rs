@@ -1,7 +1,7 @@
 use hecs::World;
 
-use crate::assets::load_all_assets;
 use crate::events::GameEvent;
+use crate::managers::load_all_assets;
 use crate::prefabs;
 use crate::resources::{GameState, Resources};
 use crate::systems::{self, render};
@@ -86,7 +86,7 @@ impl Game {
 
     /// Render (called every frame — not fixed-timestep).
     pub fn draw(&self) {
-        render::draw(&self.world, &self.res.textures);
+        render::draw(&self.world, &self.res.);
 
         #[cfg(debug_assertions)]
         if self.res.director.debug_mode {
