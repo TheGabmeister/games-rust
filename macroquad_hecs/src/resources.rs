@@ -8,7 +8,7 @@ use crate::managers::{GameDirector, LoadedAssets, MusicManager, SfxManager, Text
 // ---------------------------------------------------------------------------
 
 pub struct Resources {
-    pub textures: TextureManager,
+    pub assets: Assets,
     pub sfx: SfxManager,
     pub music: MusicManager,
     pub director: GameDirector,
@@ -17,21 +17,13 @@ pub struct Resources {
 }
 
 impl Resources {
-    pub fn new(assets: LoadedAssets) -> Self {
-        let LoadedAssets {
-            textures,
-            sfx,
-            music,
-        } = assets;
-
-        Self {
-            textures: TextureManager::new(textures),
-            sfx: SfxManager::new(sfx),
-            music: MusicManager::new(music),
-            director: GameDirector::default(),
-            input: InputState::default(),
-            events: EventBus::default(),
-        }
+    pub fn new() -> Self {
+        assets: Assets::new(),
+        sfx: SfxManager::new(),
+        music: MusicManager::new(),
+        director: GameDirector::default(),
+        input: InputState::default(),
+        events: EventBus::default(),
     }
 }
 

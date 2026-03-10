@@ -1,9 +1,6 @@
 use std::collections::HashMap;
-
 use macroquad::prelude::Texture2D;
-
 use crate::components::TextureId;
-
 use super::TextureManager;
 
 impl TextureManager {

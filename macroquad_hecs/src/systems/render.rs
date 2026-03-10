@@ -3,11 +3,11 @@ use macroquad::prelude::*;
 
 use crate::components::{DrawLayer, Sprite, TextureId, Transform};
 use crate::constants::{SCREEN_HEIGHT, SCREEN_WIDTH};
-use crate::managers::{GameDirector, TextureManager};
+use crate::managers::{GameDirector, Assets};
 use crate::resources::GameState;
 
 /// Draw all entities that have Transform + Sprite + DrawLayer, sorted back-to-front.
-pub fn draw(world: &World, textures: &TextureManager) {
+pub fn draw(world: &World, assets: &Assets) {
     clear_background(Color::from_hex(0x0a0a1a));
 
     // Collect drawables: (layer, pos, rot, texture_id, tint)
@@ -23,7 +23,7 @@ pub fn draw(world: &World, textures: &TextureManager) {
     drawables.sort_unstable_by_key(|(layer, ..)| *layer);
 
     for (_, pos, rot, texture_id, tint) in drawables {
-        let tex = textures.texture(texture_id);
+        let tex = assets.texture(texture_id);
         let w = tex.width();
         let h = tex.height();
 

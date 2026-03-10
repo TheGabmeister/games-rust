@@ -1,7 +1,7 @@
 use hecs::World;
 
 use crate::events::GameEvent;
-use crate::managers::load_all_assets;
+use crate::managers::Assets;
 use crate::prefabs;
 use crate::resources::{GameState, Resources};
 use crate::systems::{self, render};
@@ -36,7 +36,7 @@ impl Game {
     /// Load all assets and set up the initial world state.
     /// Must be called from an async context (macroquad main is already async).
     pub async fn new() -> Self {
-        let assets = load_all_assets().await;
+        let assets = Assets::load().await;
         let mut res = Resources::new(assets);
         let mut world = World::new();
 

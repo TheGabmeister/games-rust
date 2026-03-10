@@ -7,13 +7,8 @@ pub struct SfxManager {
 }
 
 impl SfxManager {
-    pub fn new(sounds: HashMap<SfxId, Sound>) -> Self {
-        Self { sounds }
-    }
 
-    pub fn play_sound(&self, id: SfxId) {
-        if let Some(s) = self.sounds.get(&id) {
+    pub fn play_sound(&self, &Assets) {
             play_sound(s, PlaySoundParams { looped: false, volume: 1.0 });
-        }
     }
 }

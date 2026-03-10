@@ -7,132 +7,44 @@ use crate::components::TextureId;
 use crate::constants::ASSETS_DIR;
 use crate::events::{MusicId, SfxId};
 
-pub struct LoadedAssets {
-    pub textures: HashMap<TextureId, Texture2D>,
-    pub sfx: HashMap<SfxId, Sound>,
-    pub music: HashMap<MusicId, Sound>,
+pub struct Assets {
+    pub player_ship:        Texture2D,
+    pub player_laser:       Texture2D,
+    pub enemy_laser:        Texture2D,
+    pub enemy_ufo_green:    Texture2D,
+    pub pill_blue:          Texture2D,
+    pub asteroid_big:       Texture2D,
+    pub sfx_laser:          Sound,
+    pub sfx_bump:           Sound,
+    pub sfx_lose:           Sound,
+    pub music_spaceshooter: Sound,
 }
 
-pub struct TextureManager {
-    pub(super) textures: HashMap<TextureId, Texture2D>,
-}
-
-pub async fn load_all_assets() -> LoadedAssets {
-    let textures = load_textures().await;
-    let sfx = load_sfx().await;
-    let music = load_music().await;
-    LoadedAssets {
-        textures,
-        sfx,
-        music,
-    }
-}
-
-async fn load_textures() -> HashMap<TextureId, Texture2D> {
-    async fn load(path: &str) -> Texture2D {
-        let tex = load_texture(path)
-            .await
-            .unwrap_or_else(|e| panic!("Failed to load texture '{path}': {e}"));
-        tex.set_filter(FilterMode::Nearest);
-        tex
-    }
-
-    let mut map = HashMap::new();
-
-    map.insert(
-        TextureId::PlayerShip,
-        load(&format!("{ASSETS_DIR}/player/player_ship.png")).await,
-    );
-    map.insert(
-        TextureId::PlayerLaser,
-        load(&format!("{ASSETS_DIR}/player/player_laser.png")).await,
-    );
-    map.insert(
-        TextureId::EnemyShipBlack,
-        load(&format!("{ASSETS_DIR}/enemies/enemy_ship_black.png")).await,
-    );
-    map.insert(
-        TextureId::EnemyShipBlue,
-        load(&format!("{ASSETS_DIR}/enemies/enemy_ship_blue.png")).await,
-    );
-    map.insert(
-        TextureId::EnemyShipGreen,
-        load(&format!("{ASSETS_DIR}/enemies/enemy_ship_green.png")).await,
-    );
-    map.insert(
-        TextureId::EnemyShipRed,
-        load(&format!("{ASSETS_DIR}/enemies/enemy_ship_red.png")).await,
-    );
-    map.insert(
-        TextureId::EnemyLaser,
-        load(&format!("{ASSETS_DIR}/enemies/enemy_laser.png")).await,
-    );
-    map.insert(
-        TextureId::PickupLife,
-        load(&format!("{ASSETS_DIR}/pickups/pickup_life.png")).await,
-    );
-    map.insert(
-        TextureId::PickupStar,
-        load(&format!("{ASSETS_DIR}/pickups/pickup_star.png")).await,
-    );
-    map.insert(
-        TextureId::PowerupBolt,
-        load(&format!("{ASSETS_DIR}/powerups/powerup_bolt.png")).await,
-    );
-    map.insert(
-        TextureId::PowerupShield,
-        load(&format!("{ASSETS_DIR}/powerups/powerup_shield.png")).await,
-    );
-
-    map
-}
-
-async fn load_sfx() -> HashMap<SfxId, Sound> {
-    async fn load(path: &str) -> Sound {
-        load_sound(path)
-            .await
-            .unwrap_or_else(|e| panic!("Failed to load sound '{path}': {e}"))
+impl Assets {
+    pub async fn load() -> Self {
+        Self {
+            player_ship:        Self::texture("player_ship.png").await,
+            player_laser:       Self::texture("player_laser.png").await,
+            enemy_laser:        Self::texture("enemy_laser.png").await,
+            enemy_ufo_green:    Self::texture("enemy_ufo_green.png").await,
+            pill_blue:          Self::texture("pill_blue.png").await,
+            asteroid_big:       Self::texture("asteroid_big.png").await,
+            sfx_laser:          Self::sound("sfx_laser1.ogg").await,
+            sfx_bump:           Self::sound("sfx_bump.ogg").await,
+            sfx_lose:           Self::sound("sfx_lose.ogg").await,
+            music_spaceshooter: Self::sound("music_spaceshooter.ogg").await,
+        }
     }
 
-    let mut map = HashMap::new();
-
-    map.insert(
-        SfxId::PlayerLaser,
-        load(&format!("{ASSETS_DIR}/player/player_laser.ogg")).await,
-    );
-    map.insert(
-        SfxId::PlayerDied,
-        load(&format!("{ASSETS_DIR}/player/player_died.ogg")).await,
-    );
-    map.insert(
-        SfxId::PlayerPowerup,
-        load(&format!("{ASSETS_DIR}/player/player_powerup.ogg")).await,
-    );
-    map.insert(
-        SfxId::EnemyLaser,
-        load(&format!("{ASSETS_DIR}/enemies/enemy_laser.ogg")).await,
-    );
-    map.insert(
-        SfxId::EnemyDestroyed,
-        load(&format!("{ASSETS_DIR}/enemies/enemy_destroyed.ogg")).await,
-    );
-
-    map
-}
-
-async fn load_music() -> HashMap<MusicId, Sound> {
-    async fn load(path: &str) -> Sound {
-        load_sound(path)
-            .await
-            .unwrap_or_else(|e| panic!("Failed to load music '{path}': {e}"))
+    async fn texture(file: &str) -> Texture2D {
+        let path = format!("{}/{}", ASSETS_DIR, file);
+        load_texture(&path).await
+            .unwrap_or_else(|_| panic!("Failed to load texture: {}", path))
     }
 
-    let mut map = HashMap::new();
-
-    map.insert(
-        MusicId::Spaceshooter,
-        load(&format!("{ASSETS_DIR}/music/music_spaceshooter.ogg")).await,
-    );
-
-    map
+    async fn sound(file: &str) -> Sound {
+        let path = format!("{}/{}", ASSETS_DIR, file);
+        load_sound(&path).await
+            .unwrap_or_else(|_| panic!("Failed to load sound: {}", path))
+    }
 }
