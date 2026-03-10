@@ -4,6 +4,7 @@ use macroquad::audio::Sound;
 use macroquad::prelude::{Texture2D, Vec2};
 
 use crate::assets::LoadedAssets;
+use crate::audio::SfxManager;
 use crate::audio::MusicManager;
 use crate::components::TextureId;
 use crate::events::{EventBus, SfxId};
@@ -17,10 +18,7 @@ pub struct Resources {
     textures: HashMap<TextureId, Texture2D>,
     sfx: HashMap<SfxId, Sound>,
 
-    /// One-shot sound effects to play this frame; drained by SfxManager.
-    pub sfx_queue: Vec<SfxId>,
-
-    /// Music singleton — call res.music_manager.play_music() / .stop() / .set_volume().
+    pub sfx_manager: SfxManager,
     pub music_manager: MusicManager,
 
     /// Game state
@@ -41,7 +39,7 @@ impl Resources {
         Self {
             textures: assets.textures,
             sfx: assets.sfx,
-            sfx_queue: Vec::new(),
+            sfx_manager: SfxManager::new(),
             music_manager: MusicManager::new(assets.music),
             score: 0,
             lives: 3,
@@ -57,18 +55,6 @@ impl Resources {
         self.textures
             .get(&id)
             .unwrap_or_else(|| panic!("Texture {id:?} not loaded"))
-    }
-
-    /// Borrow a sound effect by ID. Panics if the SFX was not loaded.
-    pub fn sfx(&self, id: SfxId) -> &Sound {
-        self.sfx
-            .get(&id)
-            .unwrap_or_else(|| panic!("SFX {id:?} not loaded"))
-    }
-
-    /// Queue an SFX to be played this frame by SfxManager.
-    pub fn queue_sfx(&mut self, id: SfxId) {
-        self.sfx_queue.push(id);
     }
 }
 

@@ -1,6 +1,5 @@
 use hecs::World;
 
-use crate::audio::SfxManager;
 use crate::assets::load_all_assets;
 use crate::events::GameEvent;
 use crate::prefabs;
@@ -10,7 +9,6 @@ use crate::systems::{self, render};
 pub struct Game {
     world: World,
     res: Resources,
-    sfx_manager: SfxManager,
 }
 
 impl Game {
@@ -30,12 +28,10 @@ impl Game {
 
         // GameStarted event triggers music in system_process_events (first update tick)
         res.events.emit(GameEvent::GameStarted);
-        let sfx_manager = SfxManager::new();
 
         Self {
             world,
             res,
-            sfx_manager,
         }
     }
 
