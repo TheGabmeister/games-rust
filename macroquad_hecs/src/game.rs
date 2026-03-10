@@ -10,6 +10,8 @@ use crate::systems::{self, render};
 pub struct Game {
     world: World,
     res: Resources,
+    sfx_manager: SfxManager,
+    music_manager: MusicManager,
 }
 
 impl Game {
@@ -29,8 +31,15 @@ impl Game {
 
         // GameStarted event triggers music in system_process_events (first update tick)
         res.events.emit(GameEvent::GameStarted);
+        let sfx_manager = SfxManager::new();
+        let music_manager = MusicManager::new();
 
-        Self { world, res }
+        Self {
+            world,
+            res,
+            sfx_manager,
+            music_manager,
+        }
     }
 
     /// Fixed-timestep update (called at 60 Hz).
@@ -56,10 +65,6 @@ impl Game {
 
         // 6. React to events (health, score, despawns, re-emits)
         systems::system_process_events(&mut self.world, &mut self.res);
-
-        // 7. Process audio queues (outside ECS systems)
-        MusicManager::update(&mut self.res);
-        SfxManager::update(&mut self.res);
 
         // 8. Debug toggle
         if self.res.input.debug_toggle_pressed {
