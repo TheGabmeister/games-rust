@@ -1,13 +1,14 @@
 use macroquad::prelude::Vec2;
 
 use crate::events::EventBus;
-use crate::managers::{GameDirector, LoadedAssets, MusicManager, SfxManager};
+use crate::managers::{GameDirector, LoadedAssets, MusicManager, SfxManager, TextureManager};
 
 // ---------------------------------------------------------------------------
 // Resources root — grouped by domain to avoid god-object growth.
 // ---------------------------------------------------------------------------
 
 pub struct Resources {
+    pub textures: TextureManager,
     pub sfx: SfxManager,
     pub music: MusicManager,
     pub director: GameDirector,
@@ -24,6 +25,7 @@ impl Resources {
         } = assets;
 
         Self {
+            textures: TextureManager::new(textures),
             sfx: SfxManager::new(sfx),
             music: MusicManager::new(music),
             director: GameDirector::default(),
