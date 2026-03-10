@@ -1,5 +1,6 @@
 use hecs::World;
 
+use crate::audio::{MusicManager, SfxManager};
 use crate::assets::load_all_assets;
 use crate::events::GameEvent;
 use crate::prefabs;
@@ -56,9 +57,9 @@ impl Game {
         // 6. React to events (health, score, despawns, re-emits)
         systems::system_process_events(&mut self.world, &mut self.res);
 
-        // 7. Process music commands and queued SFX
-        systems::system_music(&mut self.res);
-        systems::system_sfx(&mut self.res);
+        // 7. Process audio queues (outside ECS systems)
+        MusicManager::update(&mut self.res);
+        SfxManager::update(&mut self.res);
 
         // 8. Debug toggle
         if self.res.input.debug_toggle_pressed {

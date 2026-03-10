@@ -17,17 +17,11 @@ pub struct Resources {
     sfx: HashMap<SfxId, Sound>,
     music: HashMap<MusicId, Sound>,
 
-    /// One-shot sound effects to play this frame; drained by system_sfx.
+    /// One-shot sound effects to play this frame; drained by SfxManager.
     pub sfx_queue: Vec<SfxId>,
 
-    /// Music commands to process this frame; drained by system_music.
+    /// Music commands to process this frame; drained by MusicManager.
     pub music_queue: Vec<MusicCommand>,
-
-    /// Currently playing music track, if any.
-    pub current_music: Option<MusicId>,
-
-    /// Global music volume [0.0, 1.0].
-    pub music_volume: f32,
 
     /// Game state
     pub score: u32,
@@ -50,8 +44,6 @@ impl Resources {
             music: assets.music,
             sfx_queue: Vec::new(),
             music_queue: Vec::new(),
-            current_music: None,
-            music_volume: 0.4,
             score: 0,
             lives: 3,
             high_score: 0,
@@ -82,12 +74,12 @@ impl Resources {
             .unwrap_or_else(|| panic!("Music track {id:?} not loaded"))
     }
 
-    /// Queue an SFX to be played this frame by system_sfx.
+    /// Queue an SFX to be played this frame by SfxManager.
     pub fn queue_sfx(&mut self, id: SfxId) {
         self.sfx_queue.push(id);
     }
 
-    /// Queue a music command to be handled by system_music.
+    /// Queue a music command to be handled by MusicManager.
     pub fn queue_music(&mut self, command: MusicCommand) {
         self.music_queue.push(command);
     }
