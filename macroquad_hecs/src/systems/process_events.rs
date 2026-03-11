@@ -2,7 +2,7 @@ use std::collections::VecDeque;
 
 use hecs::{Entity, World};
 
-use crate::components::{Bullet, Enemy, PickupKind, ScoreValue};
+use crate::components::{Projectile, Enemy, PickupKind, ScoreValue};
 use crate::events::{EventBus, GameEvent, MusicId, SfxId};
 use crate::managers::{GameDirector, MusicManager, SfxManager};
 use crate::resources::GameState;

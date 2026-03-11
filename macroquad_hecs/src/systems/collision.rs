@@ -4,7 +4,7 @@ use hecs::{Entity, World};
 use macroquad::prelude::{vec2, Vec2};
 
 use crate::components::{
-    ActivePowerup, BoxCollider, Bullet, BulletOwner, CircleCollider, CollisionLayer, Enemy,
+    ActivePowerup, BoxCollider, Projectile, ProjectileOwner, CircleCollider, CollisionLayer, Enemy,
     EnemyKind, Pickup, PickupKind, Player, PowerupEffect, Transform,
 };
 use crate::events::{EventBus, GameEvent};
@@ -85,8 +85,8 @@ fn enemy_kind(world: &World, entity: Entity) -> Option<EnemyKind> {
     world.get::<&Enemy>(entity).ok().map(|enemy| enemy.kind)
 }
 
-fn bullet_owner(world: &World, entity: Entity) -> Option<BulletOwner> {
-    world.get::<&Bullet>(entity).ok().map(|bullet| bullet.owner)
+fn bullet_owner(world: &World, entity: Entity) -> Option<ProjectileOwner> {
+    world.get::<&Projectile>(entity).ok().map(|bullet| bullet.owner)
 }
 
 fn pickup_kind(world: &World, entity: Entity) -> Option<PickupKind> {
@@ -105,13 +105,13 @@ fn match_player_bullet_enemy(
     a: Entity,
     b: Entity,
 ) -> Option<(Entity, Entity, EnemyKind)> {
-    if bullet_owner(world, a) == Some(BulletOwner::Player) {
+    if bullet_owner(world, a) == Some(ProjectileOwner::Player) {
         if let Some(kind) = enemy_kind(world, b) {
             return Some((a, b, kind));
         }
     }
 
-    if bullet_owner(world, b) == Some(BulletOwner::Player) {
+    if bullet_owner(world, b) == Some(ProjectileOwner::Player) {
         if let Some(kind) = enemy_kind(world, a) {
             return Some((b, a, kind));
         }
@@ -121,11 +121,11 @@ fn match_player_bullet_enemy(
 }
 
 fn match_enemy_bullet_player(world: &World, a: Entity, b: Entity) -> Option<(Entity, Entity)> {
-    if bullet_owner(world, a) == Some(BulletOwner::Enemy) && is_player(world, b) {
+    if bullet_owner(world, a) == Some(ProjectileOwner::Enemy) && is_player(world, b) {
         return Some((a, b));
     }
 
-    if bullet_owner(world, b) == Some(BulletOwner::Enemy) && is_player(world, a) {
+    if bullet_owner(world, b) == Some(ProjectileOwner::Enemy) && is_player(world, a) {
         return Some((b, a));
     }
 

@@ -77,8 +77,8 @@ pub fn spawn_player_bullet(world: &mut World, pos: Vec2, speed: f32) -> Entity {
             member: LAYER_PLAYER_BULLET,
             mask: LAYER_ENEMY,
         },
-        Bullet {
-            owner: BulletOwner::Player,
+        Projectile {
+            owner: ProjectileOwner::Player,
         },
         Lifetime::new(BULLET_LIFETIME),
         DrawLayer(DRAW_BULLET),
@@ -95,8 +95,8 @@ pub fn spawn_enemy_bullet(world: &mut World, pos: Vec2, speed: f32) -> Entity {
             member: LAYER_ENEMY_BULLET,
             mask: LAYER_PLAYER,
         },
-        Bullet {
-            owner: BulletOwner::Enemy,
+        Projectile {
+            owner: ProjectileOwner::Enemy,
         },
         Lifetime::new(BULLET_LIFETIME),
         DrawLayer(DRAW_BULLET),

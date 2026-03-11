@@ -117,13 +117,13 @@ pub struct DrawLayer(pub u8);
 pub struct Player;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum BulletOwner {
+pub enum ProjectileOwner {
     Player,
     Enemy,
 }
 
-pub struct Bullet {
-    pub owner: BulletOwner,
+pub struct Projectile {
+    pub owner: ProjectileOwner,
 }
 
 // ---------------------------------------------------------------------------

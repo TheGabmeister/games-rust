@@ -123,8 +123,8 @@ pub fn system_cull_offscreen(world: &mut World) {
 
     let to_despawn: Vec<Entity> = {
         let mut v = Vec::new();
-        // (Entity, &Transform, &Bullet) → yields flat 3-tuple from .iter()
-        for (entity, transform, _bullet) in world.query::<(Entity, &Transform, &Bullet)>().iter() {
+        // (Entity, &Transform, &Projectile) → yields flat 3-tuple from .iter()
+        for (entity, transform, _bullet) in world.query::<(Entity, &Transform, &Projectile)>().iter() {
             let p = transform.pos;
             if p.x < -MARGIN
                 || p.x > SCREEN_WIDTH + MARGIN

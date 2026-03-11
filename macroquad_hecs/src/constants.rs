@@ -61,6 +61,6 @@ pub const PLAYER_START_LIVES: u32 = 3;
 pub const PLAYER_MAX_LIVES: u32 = 5;
 
 // ---------------------------------------------------------------------------
-// Bullet
+// Projectile
 // ---------------------------------------------------------------------------
 pub const BULLET_LIFETIME: f32 = 2.0;
