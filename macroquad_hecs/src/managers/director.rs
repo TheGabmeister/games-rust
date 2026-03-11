@@ -1,9 +1,9 @@
-use hecs::World;
+use hecs::{Entity, World};
 
-use crate::components::{PickupKind, Player, Transform};
+use crate::components::{PickupKind, Player};
 use crate::constants::PLAYER_START_LIVES;
-use crate::constants::{PLAYER_START_X, PLAYER_START_Y};
 use crate::constants::{PLAYER_MAX_LIVES, SCORE_PICKUP_STAR};
+use crate::prefabs;
 use crate::resources::GameState;
 
 pub struct GameDirector {
@@ -46,9 +46,17 @@ impl GameDirector {
     }
 
     pub fn on_player_died(&mut self, world: &mut World) {
-        for (transform, _player) in world.query_mut::<(&mut Transform, &Player)>() {
-            *transform = Transform::at(PLAYER_START_X, PLAYER_START_Y);
+        let players: Vec<Entity> = world
+            .query::<(Entity, &Player)>()
+            .iter()
+            .map(|(entity, _)| entity)
+            .collect();
+
+        for entity in players {
+            let _ = world.despawn(entity);
         }
+
+        prefabs::spawn_player(world);
     }
 
     pub fn apply_pickup_reward(&mut self, kind: PickupKind) {

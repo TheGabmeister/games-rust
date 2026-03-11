@@ -35,9 +35,6 @@ pub enum MusicCommand {
 pub enum GameEvent {
     GameStarted,
     PlayerDied,
-    PlayerCaptured {
-        boss: Entity,
-    },
     EnemyDestroyed {
         entity: Entity,
         kind: EnemyKind,

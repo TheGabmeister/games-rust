@@ -41,7 +41,6 @@ pub fn system_process_events(
                 music.play_music(MusicId::Spaceshooter);
             }
 
-            GameEvent::PlayerCaptured { boss: _ } => {}
             GameEvent::StageCleared => {
                 director.update_high_score();
                 
