@@ -39,7 +39,7 @@ pub fn system_process_events(
             }
 
             GameEvent::PlayerDied => {
-                director.on_player_died();
+                director.on_player_died(world);
             }
 
             GameEvent::GameStarted => {

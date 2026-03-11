@@ -1,4 +1,8 @@
+use hecs::World;
+
+use crate::components::{Player, Transform};
 use crate::constants::PLAYER_START_LIVES;
+use crate::constants::{PLAYER_START_X, PLAYER_START_Y};
 use crate::resources::GameState;
 
 pub struct GameDirector {
@@ -40,8 +44,9 @@ impl GameDirector {
         self.lives = self.lives.saturating_add(amount).min(max_lives);
     }
 
-    pub fn on_player_died(&mut self)
-    {
-        
+    pub fn on_player_died(&mut self, world: &mut World) {
+        for (transform, _player) in world.query_mut::<(&mut Transform, &Player)>() {
+            *transform = Transform::at(PLAYER_START_X, PLAYER_START_Y);
+        }
     }
 }

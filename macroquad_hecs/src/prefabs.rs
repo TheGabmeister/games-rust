@@ -10,7 +10,7 @@ use crate::constants::*;
 
 pub fn spawn_player(world: &mut World) -> Entity {
     world.spawn((
-        Transform::at(SCREEN_WIDTH * 0.5, SCREEN_HEIGHT - 80.0),
+        Transform::at(PLAYER_START_X, PLAYER_START_Y),
         Velocity::zero(),
         Sprite::new(TextureId::PlayerShip),
         BoxCollider::new(32.0, 32.0),

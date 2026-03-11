@@ -32,6 +32,8 @@ pub const DRAW_UI: u8 = 100;
 pub const PLAYER_SPEED: f32 = 200.0;
 pub const PLAYER_FIRE_RATE: f32 = 0.15;
 pub const PLAYER_BULLET_SPEED: f32 = 500.0;
+pub const PLAYER_START_X: f32 = SCREEN_WIDTH * 0.5;
+pub const PLAYER_START_Y: f32 = SCREEN_HEIGHT - 80.0;
 
 // ---------------------------------------------------------------------------
 // Enemy tuning
