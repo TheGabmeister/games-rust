@@ -1,4 +1,4 @@
-use std::collections::{HashSet, VecDeque};
+use std::collections::VecDeque;
 
 use hecs::{Entity, World};
 
@@ -20,7 +20,6 @@ pub fn system_process_events(
     music: &mut MusicManager,
 ) {
     let mut events: VecDeque<GameEvent> = events_bus.drain().into();
-    let mut to_despawn: HashSet<Entity> = HashSet::new();
 
     while let Some(event) = events.pop_front() {
         match event {
@@ -28,12 +27,12 @@ pub fn system_process_events(
             GameEvent::EnemyDestroyed { .. } => {}
 
             GameEvent::PickupCollected { entity, kind } => {
-                to_despawn.insert(entity);
+                let _ = world.despawn(entity);
                 apply_pickup_reward(director, kind);
             }
 
             GameEvent::PowerupCollected { entity, effect } => {
-                to_despawn.insert(entity);
+                let _ = world.despawn(entity);
                 // Template: extend with real powerup logic here.
                 let _ = effect;
             }
@@ -63,10 +62,6 @@ pub fn system_process_events(
             director.state = GameState::Won;
             director.update_high_score();
         }
-    }
-
-    for entity in to_despawn {
-        let _ = world.despawn(entity);
     }
 }
 
