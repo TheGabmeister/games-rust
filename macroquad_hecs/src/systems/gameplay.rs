@@ -27,18 +27,20 @@ pub fn system_player_movement(world: &mut World, input: &InputState, dt: f32) {
 
 pub fn system_player_fire(world: &mut World, input: &InputState, sfx: &SfxManager, dt: f32) {
     // Two-pass: collect fire info (drops query_mut borrow), then spawn.
-    let mut fire_info: Option<(Vec2, f32)> = None;
+    let mut fire_pos: Option<Vec2> = None;
 
-    for (transform, weapon, _player) in world.query_mut::<(&Transform, &mut Weapon, &Player)>() {
-        weapon.timer -= dt;
-        if input.fire_held && weapon.timer <= 0.0 {
-            fire_info = Some((transform.pos, weapon.bullet_speed));
-            weapon.timer = weapon.cooldown;
+    for (transform, fire_timer, _player) in
+        world.query_mut::<(&Transform, &mut FireTimer, &Player)>()
+    {
+        fire_timer.timer -= dt;
+        if input.fire_held && fire_timer.timer <= 0.0 {
+            fire_pos = Some(transform.pos);
+            fire_timer.timer = fire_timer.cooldown;
         }
     }
 
-    if let Some((pos, speed)) = fire_info {
-        prefabs::spawn_player_bullet(world, pos - vec2(0.0, 20.0), speed);
+    if let Some(pos) = fire_pos {
+        prefabs::spawn_player_bullet(world, pos - vec2(0.0, 20.0), PLAYER_BULLET_SPEED);
         sfx.play_sound(SfxId::PlayerLaser);
     }
 }
@@ -62,18 +64,19 @@ pub fn system_enemy_movement(world: &mut World) {
 
 pub fn system_enemy_fire(world: &mut World, sfx: &SfxManager, dt: f32) {
     // Two-pass: collect fire positions (drops query_mut borrow), then spawn.
-    let mut fire_positions: Vec<(Vec2, f32)> = Vec::new();
+    let mut fire_positions: Vec<Vec2> = Vec::new();
 
-    for (transform, weapon, _enemy) in world.query_mut::<(&Transform, &mut Weapon, &Enemy)>() {
-        weapon.timer -= dt;
-        if weapon.timer <= 0.0 {
-            fire_positions.push((transform.pos, weapon.bullet_speed));
-            weapon.timer = weapon.cooldown;
+    for (transform, fire_timer, _enemy) in world.query_mut::<(&Transform, &mut FireTimer, &Enemy)>()
+    {
+        fire_timer.timer -= dt;
+        if fire_timer.timer <= 0.0 {
+            fire_positions.push(transform.pos);
+            fire_timer.timer = fire_timer.cooldown;
         }
     }
 
-    for (pos, speed) in fire_positions {
-        prefabs::spawn_enemy_bullet(world, pos + vec2(0.0, 20.0), speed);
+    for pos in fire_positions {
+        prefabs::spawn_enemy_bullet(world, pos + vec2(0.0, 20.0), ENEMY_BULLET_SPEED);
         sfx.play_sound(SfxId::EnemyLaser);
     }
 }

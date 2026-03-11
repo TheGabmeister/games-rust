@@ -19,7 +19,7 @@ pub fn spawn_player(world: &mut World) -> Entity {
             mask: LAYER_ENEMY | LAYER_ENEMY_BULLET | LAYER_PICKUP,
         },
         Player,
-        Weapon::new(PLAYER_FIRE_RATE, PLAYER_BULLET_SPEED),
+        FireTimer::new(PLAYER_FIRE_RATE),
         DrawLayer(DRAW_PLAYER),
     ))
 }
@@ -57,7 +57,7 @@ pub fn spawn_enemy(world: &mut World, kind: EnemyKind, pos: Vec2) -> Entity {
             mask: LAYER_PLAYER | LAYER_PLAYER_BULLET,
         },
         Enemy { kind },
-        Weapon::new(ENEMY_FIRE_RATE, ENEMY_BULLET_SPEED),
+        FireTimer::new(ENEMY_FIRE_RATE),
         ScoreValue(score),
         DrawLayer(DRAW_ENEMY),
     ))

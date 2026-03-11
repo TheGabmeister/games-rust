@@ -142,20 +142,18 @@ impl Lifetime {
     }
 }
 
-/// Controls firing rate.
+/// Per-entity fire cooldown timer.
 #[derive(Clone, Copy, Debug)]
-pub struct Weapon {
+pub struct FireTimer {
     pub cooldown: f32, // seconds between shots
     pub timer: f32,    // counts down; fires when <= 0
-    pub bullet_speed: f32,
 }
 
-impl Weapon {
-    pub fn new(cooldown: f32, bullet_speed: f32) -> Self {
+impl FireTimer {
+    pub fn new(cooldown: f32) -> Self {
         Self {
             cooldown,
             timer: 0.0,
-            bullet_speed,
         }
     }
 }
