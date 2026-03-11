@@ -52,7 +52,7 @@ pub fn system_process_events(
                 if director.state == GameState::Playing {
                     director.state = GameState::Won;
                     director.update_high_score();
-                }
+                } 
             }
         }
     }
