@@ -21,7 +21,6 @@ pub fn system_process_events(
 ) {
     let mut events: VecDeque<GameEvent> = events_bus.drain().into();
     let mut to_despawn: HashSet<Entity> = HashSet::new();
-    let mut player_died_this_tick = false;
 
     while let Some(event) = events.pop_front() {
         match event {
@@ -49,10 +48,8 @@ pub fn system_process_events(
 
             GameEvent::PlayerCaptured { boss: _ } => {}
             GameEvent::StageCleared => {
-                if director.state == GameState::Playing {
-                    director.state = GameState::Won;
-                    director.update_high_score();
-                } 
+                director.update_high_score();
+                
             }
         }
     }
