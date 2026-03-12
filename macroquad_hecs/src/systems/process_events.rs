@@ -36,6 +36,7 @@ pub fn system_process_events(
 
             GameEvent::PlayerDied => {
                 director.on_player_died(world, despawns);
+                sfx.play_sound((SfxId::PlayerDied));
             }
 
             GameEvent::GameStarted => {
