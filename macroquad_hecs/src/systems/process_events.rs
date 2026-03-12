@@ -2,7 +2,7 @@ use std::collections::VecDeque;
 
 use hecs::{Entity, World};
 
-use crate::components::{Projectile, Enemy, PickupKind, ScoreValue};
+use crate::components::{Projectile, Enemy, PickupKind};
 use crate::events::{EventBus, GameEvent, MusicId, SfxId};
 use crate::managers::{GameDirector, MusicManager, SfxManager};
 use crate::resources::DespawnQueue;
@@ -25,7 +25,7 @@ pub fn system_process_events(
         match event {
 
             GameEvent::EnemyDestroyed { entity, kind: _ } => {
-                director.on_enemy_destroyed();
+                director.on_enemy_destroyed(world, entity, sfx);
             }
 
             GameEvent::PickupCollected { entity, kind } => {
@@ -37,12 +37,11 @@ pub fn system_process_events(
             }
 
             GameEvent::PlayerDied => {
-                director.on_player_died(world, despawns);
-                sfx.play_sound((SfxId::PlayerDied));
+                director.on_player_died(world, despawns, sfx);
             }
 
             GameEvent::GameStarted => {
-                music.play_music(MusicId::Spaceshooter);
+                //music.play_music(MusicId::Spaceshooter);
             }
 
             GameEvent::StageCleared => {

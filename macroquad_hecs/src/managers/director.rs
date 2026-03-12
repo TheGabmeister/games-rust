@@ -1,9 +1,11 @@
 use hecs::{Entity, World};
 
-use crate::components::{PickupKind, Player};
+use crate::components::{PickupKind, Player, ScoreValue};
 use crate::constants::PLAYER_START_LIVES;
 use crate::constants::{PLAYER_MAX_LIVES, SCORE_PICKUP_STAR};
 use crate::prefabs;
+use crate::managers::SfxManager;
+use crate::events::SfxId;
 use crate::resources::{DespawnQueue, GameState};
 
 pub struct GameDirector {
@@ -41,17 +43,30 @@ impl GameDirector {
         self.score = self.score.saturating_add(points);
     }
 
-    pub fn add_lives_clamped(&mut self, amount: u32, max_lives: u32) {
-        self.lives = self.lives.saturating_add(amount).min(max_lives);
-    }
-
-    pub fn on_enemy_destroyed(&mut self, enemy_kind: EnemyKind){
-        if let Ok(score_value) = world.get::<&ScoreValue>(entity) {
-            update_score(score_value.0);
+    pub fn update_lives(&mut self, amount: i32) {
+        if amount >= 0 {
+            self.lives = self
+                .lives
+                .saturating_add(amount as u32)
+                .min(PLAYER_MAX_LIVES);
+        } else {
+            self.lives = self.lives.saturating_sub(amount.unsigned_abs());
         }
     }
 
-    pub fn on_player_died(&mut self, world: &mut World, despawns: &mut DespawnQueue) {
+    pub fn on_enemy_destroyed(&mut self, world: &World, entity: Entity, sfx: &mut SfxManager) {
+        sfx.play_sound((SfxId::EnemyDestroyed));
+        if let Ok(score_value) = world.get::<&ScoreValue>(entity) {
+            self.update_score(score_value.0);
+        }
+    }
+
+    pub fn on_player_died(
+        &mut self,
+        world: &mut World,
+        despawns: &mut DespawnQueue,
+        sfx: &mut SfxManager,
+    ) {
         let players: Vec<Entity> = world
             .query::<(Entity, &Player)>()
             .iter()
@@ -59,13 +74,14 @@ impl GameDirector {
             .collect();
 
         despawns.extend(players);
-
+        sfx.play_sound((SfxId::PlayerDied));
+        self.update_lives(-1);
         prefabs::spawn_player(world);
     }
 
     pub fn apply_pickup_reward(&mut self, kind: PickupKind) {
         match kind {
-            PickupKind::Life => self.add_lives_clamped(1, PLAYER_MAX_LIVES),
+            PickupKind::Life => self.update_lives(1),
             PickupKind::Star => self.update_score(SCORE_PICKUP_STAR),
         }
     }
