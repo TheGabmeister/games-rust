@@ -76,7 +76,11 @@ impl GameDirector {
         despawns.extend(players);
         sfx.play_sound((SfxId::PlayerDied));
         self.update_lives(-1);
-        prefabs::spawn_player(world);
+        if self.lives == 0 {
+            self.state = GameState::Lost;
+        } else {
+            prefabs::spawn_player(world);
+        }
     }
 
     pub fn apply_pickup_reward(&mut self, kind: PickupKind) {

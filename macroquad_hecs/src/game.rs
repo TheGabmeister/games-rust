@@ -11,7 +11,7 @@ pub struct Game {
     res: Resources,
 }
 
-fn spawn_initial_wave(world: &mut World) {
+fn spawn_entities(world: &mut World) {
     prefabs::spawn_player(world);
 
     // Spawn a few enemies to demonstrate the template.
@@ -30,6 +30,28 @@ fn spawn_initial_wave(world: &mut World) {
         crate::components::EnemyKind::Green,
         macroquad::prelude::vec2(450.0, 100.0),
     );
+
+    // Initial collectibles/powerups at run start.
+    prefabs::spawn_pickup(
+        world,
+        crate::components::PickupKind::Life,
+        macroquad::prelude::vec2(180.0, 220.0),
+    );
+    prefabs::spawn_pickup(
+        world,
+        crate::components::PickupKind::Star,
+        macroquad::prelude::vec2(420.0, 220.0),
+    );
+    prefabs::spawn_powerup(
+        world,
+        crate::components::PowerupEffect::Bolt,
+        macroquad::prelude::vec2(260.0, 280.0),
+    );
+    prefabs::spawn_powerup(
+        world,
+        crate::components::PowerupEffect::Shield,
+        macroquad::prelude::vec2(340.0, 280.0),
+    );
 }
 
 impl Game {
@@ -40,7 +62,8 @@ impl Game {
         let mut res = Resources::new(assets);
         let mut world = World::new();
 
-        spawn_initial_wave(&mut world);
+        spawn_entities(&mut world);
+        
         res.events.emit(GameEvent::GameStarted);
 
         Self { world, res }
@@ -98,7 +121,7 @@ impl Game {
 
     fn restart_run(&mut self) {
         self.world.clear();
-        spawn_initial_wave(&mut self.world);
+        spawn_entities(&mut self.world);
         self.res.events.drain();
         self.res.despawns.clear();
         self.res.director.reset_run();

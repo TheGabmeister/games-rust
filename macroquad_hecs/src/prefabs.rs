@@ -103,10 +103,6 @@ pub fn spawn_enemy_bullet(world: &mut World, pos: Vec2, speed: f32) -> Entity {
     ))
 }
 
-// ---------------------------------------------------------------------------
-// Pickups
-// ---------------------------------------------------------------------------
-
 pub fn spawn_pickup(world: &mut World, kind: PickupKind, pos: Vec2) -> Entity {
     let texture = match kind {
         PickupKind::Life => TextureId::PickupLife,
@@ -115,7 +111,6 @@ pub fn spawn_pickup(world: &mut World, kind: PickupKind, pos: Vec2) -> Entity {
 
     world.spawn((
         Transform::at(pos.x, pos.y),
-        Velocity::new(0.0, 60.0),
         Sprite::new(texture),
         CircleCollider::new(12.0),
         CollisionLayer {
@@ -127,10 +122,6 @@ pub fn spawn_pickup(world: &mut World, kind: PickupKind, pos: Vec2) -> Entity {
     ))
 }
 
-// ---------------------------------------------------------------------------
-// Powerups
-// ---------------------------------------------------------------------------
-
 pub fn spawn_powerup(world: &mut World, effect: PowerupEffect, pos: Vec2) -> Entity {
     let texture = match effect {
         PowerupEffect::Bolt => TextureId::PowerupBolt,
@@ -139,7 +130,6 @@ pub fn spawn_powerup(world: &mut World, effect: PowerupEffect, pos: Vec2) -> Ent
 
     world.spawn((
         Transform::at(pos.x, pos.y),
-        Velocity::new(0.0, 60.0),
         Sprite::new(texture),
         CircleCollider::new(12.0),
         CollisionLayer {
@@ -154,11 +144,6 @@ pub fn spawn_powerup(world: &mut World, effect: PowerupEffect, pos: Vec2) -> Ent
     ))
 }
 
-// ---------------------------------------------------------------------------
-// Obstacles
-// ---------------------------------------------------------------------------
-
-/// Static obstacle — no velocity, just a box collider.
 pub fn spawn_obstacle(world: &mut World, pos: Vec2, size: Vec2) -> Entity {
     world.spawn((
         Transform::at(pos.x, pos.y),
