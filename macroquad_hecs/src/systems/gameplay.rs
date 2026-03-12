@@ -6,6 +6,7 @@ use crate::constants::*;
 use crate::events::SfxId;
 use crate::managers::SfxManager;
 use crate::prefabs;
+use crate::resources::DespawnQueue;
 use crate::resources::InputState;
 
 // ---------------------------------------------------------------------------
@@ -95,9 +96,9 @@ pub fn system_integrate(world: &mut World, dt: f32) {
 // Lifetime tick + despawn
 // ---------------------------------------------------------------------------
 
-pub fn system_lifetime(world: &mut World, dt: f32) {
+pub fn system_lifetime(world: &mut World, despawns: &mut DespawnQueue, dt: f32) {
     // Include Entity in the type so .iter() yields (Entity, &mut Lifetime).
-    // Block scope ensures QueryBorrow is dropped before world.despawn().
+    // Block scope keeps the mutable query borrow local.
     let expired: Vec<Entity> = {
         let mut v = Vec::new();
         for (entity, lt) in world.query::<(Entity, &mut Lifetime)>().iter() {
@@ -109,16 +110,14 @@ pub fn system_lifetime(world: &mut World, dt: f32) {
         v
     };
 
-    for entity in expired {
-        let _ = world.despawn(entity);
-    }
+    despawns.extend(expired);
 }
 
 // ---------------------------------------------------------------------------
 // Cull off-screen bullets
 // ---------------------------------------------------------------------------
 
-pub fn system_cull_offscreen(world: &mut World) {
+pub fn system_cull_offscreen(world: &World, despawns: &mut DespawnQueue) {
     const MARGIN: f32 = 64.0;
 
     let to_despawn: Vec<Entity> = {
@@ -137,7 +136,5 @@ pub fn system_cull_offscreen(world: &mut World) {
         v
     };
 
-    for entity in to_despawn {
-        let _ = world.despawn(entity);
-    }
+    despawns.extend(to_despawn);
 }

@@ -1,3 +1,6 @@
+use std::collections::HashSet;
+
+use hecs::Entity;
 use macroquad::prelude::Vec2;
 
 use crate::events::EventBus;
@@ -14,6 +17,7 @@ pub struct Resources {
     pub director: GameDirector,
     pub input: InputState,
     pub events: EventBus,
+    pub despawns: DespawnQueue,
 }
 
 impl Resources {
@@ -27,7 +31,34 @@ impl Resources {
             director: GameDirector::default(),
             input: InputState::default(),
             events: EventBus::default(),
+            despawns: DespawnQueue::default(),
         }
+    }
+}
+
+#[derive(Default)]
+pub struct DespawnQueue {
+    entities: HashSet<Entity>,
+}
+
+impl DespawnQueue {
+    pub fn request(&mut self, entity: Entity) {
+        self.entities.insert(entity);
+    }
+
+    pub fn extend<I>(&mut self, entities: I)
+    where
+        I: IntoIterator<Item = Entity>,
+    {
+        self.entities.extend(entities);
+    }
+
+    pub fn drain(&mut self) -> Vec<Entity> {
+        self.entities.drain().collect()
+    }
+
+    pub fn clear(&mut self) {
+        self.entities.clear();
     }
 }
 

@@ -4,7 +4,7 @@ use crate::components::{PickupKind, Player};
 use crate::constants::PLAYER_START_LIVES;
 use crate::constants::{PLAYER_MAX_LIVES, SCORE_PICKUP_STAR};
 use crate::prefabs;
-use crate::resources::GameState;
+use crate::resources::{DespawnQueue, GameState};
 
 pub struct GameDirector {
     pub score: u32,
@@ -45,16 +45,14 @@ impl GameDirector {
         self.lives = self.lives.saturating_add(amount).min(max_lives);
     }
 
-    pub fn on_player_died(&mut self, world: &mut World) {
+    pub fn on_player_died(&mut self, world: &mut World, despawns: &mut DespawnQueue) {
         let players: Vec<Entity> = world
             .query::<(Entity, &Player)>()
             .iter()
             .map(|(entity, _)| entity)
             .collect();
 
-        for entity in players {
-            let _ = world.despawn(entity);
-        }
+        despawns.extend(players);
 
         prefabs::spawn_player(world);
     }

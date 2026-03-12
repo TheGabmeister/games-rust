@@ -8,6 +8,7 @@ use crate::components::{
     EnemyKind, Pickup, PickupKind, Player, PowerupEffect, Transform,
 };
 use crate::events::{EventBus, GameEvent};
+use crate::resources::DespawnQueue;
 
 #[derive(Clone, Copy)]
 enum ColliderShape {
@@ -184,7 +185,7 @@ fn match_player_powerup(
 // Main collision system
 // ---------------------------------------------------------------------------
 
-pub fn system_collision(world: &mut World, events: &mut EventBus) {
+pub fn system_collision(world: &World, events: &mut EventBus, despawns: &mut DespawnQueue) {
     let mut to_despawn: HashSet<Entity> = HashSet::new();
     let mut player_died_emitted = false;
 
@@ -294,7 +295,5 @@ pub fn system_collision(world: &mut World, events: &mut EventBus) {
         }
     }
 
-    for entity in to_despawn {
-        let _ = world.despawn(entity);
-    }
+    despawns.extend(to_despawn);
 }

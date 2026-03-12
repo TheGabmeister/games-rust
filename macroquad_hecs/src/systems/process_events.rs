@@ -5,7 +5,7 @@ use hecs::{Entity, World};
 use crate::components::{Projectile, Enemy, PickupKind, ScoreValue};
 use crate::events::{EventBus, GameEvent, MusicId, SfxId};
 use crate::managers::{GameDirector, MusicManager, SfxManager};
-use crate::resources::GameState;
+use crate::resources::DespawnQueue;
 
 // ---------------------------------------------------------------------------
 // Process events
@@ -15,6 +15,7 @@ pub fn system_process_events(
     world: &mut World,
     director: &mut GameDirector,
     events_bus: &mut EventBus,
+    despawns: &mut DespawnQueue,
     sfx: &mut SfxManager,
     music: &mut MusicManager,
 ) {
@@ -34,7 +35,7 @@ pub fn system_process_events(
             }
 
             GameEvent::PlayerDied => {
-                director.on_player_died(world);
+                director.on_player_died(world, despawns);
             }
 
             GameEvent::GameStarted => {

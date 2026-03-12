@@ -63,19 +63,22 @@ impl Game {
             systems::system_enemy_fire(&mut self.world, &self.res.sfx, dt);
 
             systems::system_integrate(&mut self.world, dt);
-            systems::system_cull_offscreen(&mut self.world);
-            systems::system_lifetime(&mut self.world, dt);
+            systems::system_cull_offscreen(&self.world, &mut self.res.despawns);
+            systems::system_lifetime(&mut self.world, &mut self.res.despawns, dt);
+            systems::system_apply_despawns(&mut self.world, &mut self.res.despawns);
 
-            systems::system_collision(&mut self.world, &mut self.res.events);
+            systems::system_collision(&self.world, &mut self.res.events, &mut self.res.despawns);
 
             // React to events (score, despawns, state transitions)
             systems::system_process_events(
                 &mut self.world,
                 &mut self.res.director,
                 &mut self.res.events,
+                &mut self.res.despawns,
                 &mut self.res.sfx,
                 &mut self.res.music,
             );
+            systems::system_apply_despawns(&mut self.world, &mut self.res.despawns);
         } else if self.res.input.confirm_pressed {
             self.restart_run();
         }
@@ -97,6 +100,7 @@ impl Game {
         self.world.clear();
         spawn_initial_wave(&mut self.world);
         self.res.events.drain();
+        self.res.despawns.clear();
         self.res.director.reset_run();
     }
 }
