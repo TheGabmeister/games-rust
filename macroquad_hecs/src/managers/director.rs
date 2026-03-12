@@ -37,12 +37,18 @@ impl GameDirector {
         self.high_score = self.high_score.max(self.score);
     }
 
-    pub fn add_score(&mut self, points: u32) {
+    pub fn update_score(&mut self, points: u32) {
         self.score = self.score.saturating_add(points);
     }
 
     pub fn add_lives_clamped(&mut self, amount: u32, max_lives: u32) {
         self.lives = self.lives.saturating_add(amount).min(max_lives);
+    }
+
+    pub fn on_enemy_destroyed(&mut self, enemy_kind: EnemyKind){
+        if let Ok(score_value) = world.get::<&ScoreValue>(entity) {
+            update_score(score_value.0);
+        }
     }
 
     pub fn on_player_died(&mut self, world: &mut World, despawns: &mut DespawnQueue) {
@@ -60,7 +66,7 @@ impl GameDirector {
     pub fn apply_pickup_reward(&mut self, kind: PickupKind) {
         match kind {
             PickupKind::Life => self.add_lives_clamped(1, PLAYER_MAX_LIVES),
-            PickupKind::Star => self.add_score(SCORE_PICKUP_STAR),
+            PickupKind::Star => self.update_score(SCORE_PICKUP_STAR),
         }
     }
 }

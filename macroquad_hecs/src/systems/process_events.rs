@@ -24,7 +24,9 @@ pub fn system_process_events(
     while let Some(event) = events.pop_front() {
         match event {
 
-            GameEvent::EnemyDestroyed { .. } => {}
+            GameEvent::EnemyDestroyed { entity, kind: _ } => {
+                director.on_enemy_destroyed();
+            }
 
             GameEvent::PickupCollected { entity, kind } => {
                 director.apply_pickup_reward(kind);
