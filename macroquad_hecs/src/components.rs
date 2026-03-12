@@ -77,6 +77,8 @@ pub struct CollisionLayer {
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum TextureId {
     PlayerShip,
+    PlayerShipLeft,
+    PlayerShipRight,
     PlayerLaser,
     EnemyShipBlack,
     EnemyShipBlue,

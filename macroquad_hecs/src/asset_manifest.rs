@@ -3,6 +3,8 @@ use crate::events::{MusicId, SfxId};
 
 pub const TEXTURES: &[(TextureId, &str)] = &[
     (TextureId::PlayerShip, "player/player_ship.png"),
+    (TextureId::PlayerShipLeft, "player/player_ship_left.png"),
+    (TextureId::PlayerShipRight, "player/player_ship_right.png"),
     (TextureId::PlayerLaser, "player/player_laser.png"),
     (TextureId::EnemyLaser, "enemies/enemy_laser.png"),
     (TextureId::EnemyShipBlack, "enemies/enemy_ship_black.png"),

@@ -14,11 +14,20 @@ use crate::resources::InputState;
 // ---------------------------------------------------------------------------
 
 pub fn system_player_movement(world: &mut World, input: &InputState, dt: f32) {
-    // query_mut yields Q::Item only — no entity in the tuple
-    for (transform, _player) in world.query_mut::<(&mut Transform, &Player)>() {
+    // query_mut yields Q::Item only - no entity in the tuple
+    for (transform, sprite, _player) in world.query_mut::<(&mut Transform, &mut Sprite, &Player)>()
+    {
         transform.pos += input.move_axis * PLAYER_SPEED * dt;
         transform.pos.x = transform.pos.x.clamp(20.0, SCREEN_WIDTH - 20.0);
         transform.pos.y = transform.pos.y.clamp(20.0, SCREEN_HEIGHT - 20.0);
+
+        sprite.texture = if input.move_axis.x < 0.0 {
+            TextureId::PlayerShipLeft
+        } else if input.move_axis.x > 0.0 {
+            TextureId::PlayerShipRight
+        } else {
+            TextureId::PlayerShip
+        };
     }
 }
 
