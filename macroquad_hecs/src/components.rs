@@ -92,6 +92,7 @@ pub enum TextureId {
     PickupStar,
     PowerupBolt,
     PowerupShield,
+    OldHero,
 }
 
 pub struct Sprite {
@@ -114,7 +115,6 @@ pub struct DrawLayer(pub u8);
 
 /// Per-entity animation playback state. Pair with `SpriteRegion` and a `Sprite`
 /// whose `texture` points to the sprite sheet atlas.
-#[allow(dead_code)]
 pub struct Animator {
     pub sheet: SpriteSheetId,
     pub current_clip: AnimClipName,
@@ -123,7 +123,6 @@ pub struct Animator {
     pub finished: bool,
 }
 
-#[allow(dead_code)]
 impl Animator {
     pub fn new(sheet: SpriteSheetId, clip: AnimClipName, anim_db: &AnimationDb) -> Self {
         let c = anim_db.clip(sheet, clip);
@@ -152,13 +151,12 @@ impl Animator {
 /// Source rectangle within a sprite sheet texture. Updated each tick by
 /// `system_animate`. If absent on an entity, the render system draws the
 /// full texture (backward compatible with static sprites).
-#[allow(dead_code)]
 pub struct SpriteRegion {
     pub source: Rect,
+    #[allow(dead_code)]
     pub size: Vec2,
 }
 
-#[allow(dead_code)]
 impl SpriteRegion {
     pub fn new(sheet: SpriteSheetId, clip: AnimClipName, anim_db: &AnimationDb) -> Self {
         let c = anim_db.clip(sheet, clip);
@@ -169,6 +167,14 @@ impl SpriteRegion {
             size: vec2(def.frame_width as f32, def.frame_height as f32),
         }
     }
+}
+
+/// Demo component that cycles an entity through a list of animation clips.
+pub struct AnimDemo {
+    pub clips: &'static [AnimClipName],
+    pub current_index: usize,
+    pub timer: f32,
+    pub interval: f32,
 }
 
 // ---------------------------------------------------------------------------

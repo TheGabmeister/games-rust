@@ -5,7 +5,7 @@ use crate::events::{
     PowerupCollected, StageCleared,
 };
 use crate::handlers;
-use crate::managers::Assets;
+use crate::managers::{AnimationDb, Assets};
 use crate::prefabs;
 use crate::resources::{GameState, Resources};
 use crate::systems::{self, render};
@@ -15,7 +15,7 @@ pub struct Game {
     res: Resources,
 }
 
-fn spawn_entities(world: &mut World) {
+fn spawn_entities(world: &mut World, anim_db: &AnimationDb) {
     prefabs::spawn_player(world);
 
     // Spawn a few enemies to demonstrate the template.
@@ -56,6 +56,9 @@ fn spawn_entities(world: &mut World) {
         crate::components::PowerupEffect::Shield,
         macroquad::prelude::vec2(340.0, 280.0),
     );
+
+    // Animated character demo — cycles through all clips.
+    prefabs::spawn_old_hero(world, anim_db, macroquad::prelude::vec2(300.0, 400.0));
 }
 
 impl Game {
@@ -76,7 +79,7 @@ impl Game {
         res.event_registry.on::<PlaySfx>(handlers::on_play_sfx);
         res.event_registry.on::<PlayMusic>(handlers::on_play_music);
 
-        spawn_entities(&mut world);
+        spawn_entities(&mut world, &res.anim_db);
 
         res.events.emit(GameStarted);
 
@@ -97,6 +100,7 @@ impl Game {
         if self.res.director.state == GameState::Playing {
             systems::system_tick_powerups(&mut self.world, dt);
             systems::system_animate(&mut self.world, &self.res.anim_db, dt);
+            systems::system_anim_demo(&mut self.world, &self.res.anim_db, dt);
             systems::system_player_movement(&mut self.world, &self.res.input, dt);
             systems::system_player_fire(
                 &mut self.world,
@@ -148,7 +152,7 @@ impl Game {
 
     fn restart_run(&mut self) {
         self.world.clear();
-        spawn_entities(&mut self.world);
+        spawn_entities(&mut self.world, &self.res.anim_db);
         self.res.events.drain_raw();
         self.res.despawns.clear();
         self.res.director.reset_run();

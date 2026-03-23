@@ -11,7 +11,6 @@ pub struct AnimationDb {
     clips: HashMap<(SpriteSheetId, AnimClipName), AnimClip>,
 }
 
-#[allow(dead_code)]
 impl AnimationDb {
     pub fn new() -> Self {
         Self {

@@ -15,6 +15,7 @@ pub const TEXTURES: &[(TextureId, &str)] = &[
     (TextureId::PickupStar, "pickups/pickup_star.png"),
     (TextureId::PowerupBolt, "powerups/powerup_bolt.png"),
     (TextureId::PowerupShield, "powerups/powerup_shield.png"),
+    (TextureId::OldHero, "character/old_hero.png"),
 ];
 
 pub const SFX: &[(SfxId, &str)] = &[

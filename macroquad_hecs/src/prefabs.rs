@@ -1,8 +1,10 @@
 use hecs::{Entity, World};
 use macroquad::prelude::*;
 
+use crate::animation::{AnimClipName, SpriteSheetId};
 use crate::components::*;
 use crate::constants::*;
+use crate::managers::AnimationDb;
 
 // ---------------------------------------------------------------------------
 // Player
@@ -121,6 +123,40 @@ pub fn spawn_pickup(world: &mut World, kind: PickupKind, pos: Vec2) -> Entity {
         DrawLayer(DRAW_PICKUP),
     ))
 }
+
+// ---------------------------------------------------------------------------
+// Animated characters
+// ---------------------------------------------------------------------------
+
+const OLD_HERO_CLIPS: &[AnimClipName] = &[
+    AnimClipName::Idle,
+    AnimClipName::Walk,
+    AnimClipName::Run,
+    AnimClipName::Jump,
+    AnimClipName::Fight,
+];
+
+pub fn spawn_old_hero(world: &mut World, anim_db: &AnimationDb, pos: Vec2) -> Entity {
+    let sheet = SpriteSheetId::OldHero;
+    let clip = AnimClipName::Idle;
+    world.spawn((
+        Transform::at(pos.x, pos.y),
+        Sprite::new(TextureId::OldHero),
+        Animator::new(sheet, clip, anim_db),
+        SpriteRegion::new(sheet, clip, anim_db),
+        AnimDemo {
+            clips: OLD_HERO_CLIPS,
+            current_index: 0,
+            timer: 3.0,
+            interval: 3.0,
+        },
+        DrawLayer(DRAW_PLAYER),
+    ))
+}
+
+// ---------------------------------------------------------------------------
+// Powerups
+// ---------------------------------------------------------------------------
 
 pub fn spawn_powerup(world: &mut World, effect: PowerupEffect, pos: Vec2) -> Entity {
     let (texture, duration) = match effect {

@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 use crate::components::TextureId;
 
 // ---------------------------------------------------------------------------
@@ -9,19 +7,22 @@ use crate::components::TextureId;
 /// Identifies a sprite sheet definition in the AnimationDb.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum SpriteSheetId {
-    // Add entries here as you create sprite sheets, e.g.:
-    // PlayerLink,
-    // Npc,
+    OldHero,
 }
 
 /// Named animation clips within a sprite sheet.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[allow(dead_code)]
 pub enum AnimClipName {
     Idle,
+    Walk,
     WalkUp,
     WalkDown,
     WalkLeft,
     WalkRight,
+    Run,
+    Jump,
+    Fight,
     AttackUp,
     AttackDown,
     AttackLeft,
@@ -34,7 +35,8 @@ pub enum AnimClipName {
 
 /// Describes the grid layout of a uniform sprite sheet (e.g. an Aseprite export).
 pub struct SpriteSheetDef {
-    /// Which loaded texture this sheet lives in.
+    /// Which loaded texture this sheet lives in (metadata for lookup).
+    #[allow(dead_code)]
     pub texture: TextureId,
     /// Width of a single frame in pixels.
     pub frame_width: u16,
