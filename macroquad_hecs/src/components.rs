@@ -225,7 +225,7 @@ impl FireTimer {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, serde::Deserialize)]
 pub enum EnemyKind {
     Black,
     Blue,
@@ -237,7 +237,7 @@ pub struct Enemy {
     pub kind: EnemyKind,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Deserialize)]
 pub enum PickupKind {
     Life,
     Star,
@@ -247,7 +247,7 @@ pub struct Pickup {
     pub kind: PickupKind,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Deserialize)]
 pub enum PowerupEffect {
     Bolt,   // rapid fire
     Shield, // damage immunity

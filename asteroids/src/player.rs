@@ -19,6 +19,7 @@ pub struct Player {
     box_collider:     BoxCollider,
     vx:               f32,
     vy:               f32,
+    invincible_timer: f32,
 }
 
 impl Player {
@@ -31,10 +32,15 @@ impl Player {
             box_collider: BoxCollider::default(),
             vx:           0.0,
             vy:           0.0,
+            invincible_timer: 0.0,
         }
     }
 
     pub fn update(&mut self, dt: f32, input: &InputState) {
+        if self.invincible_timer > 0.0 {
+            self.invincible_timer -= dt;
+        }
+
         if input.move_left  { self.transform.rot -= ROTATE_SPEED * dt; }
         if input.move_right { self.transform.rot += ROTATE_SPEED * dt; }
 
@@ -68,9 +74,20 @@ impl Player {
         self.vx            = 0.0;
         self.vy            = 0.0;
         self.alive         = true;
+        self.invincible_timer = 2.0;
+    }
+
+    pub fn is_invincible(&self) -> bool {
+        self.invincible_timer > 0.0
     }
 
     pub fn draw(&self) {
+        if self.invincible_timer > 0.0 {
+            // Blink: skip drawing every other 0.1s interval
+            if (self.invincible_timer * 10.0) as i32 % 2 == 0 {
+                return;
+            }
+        }
         self.sprite.draw(&self.transform);
     }
 

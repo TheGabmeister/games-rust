@@ -7,8 +7,11 @@ use crate::managers::{Assets, GameDirector};
 use crate::resources::GameState;
 
 /// Draw all entities that have Transform + Sprite + DrawLayer, sorted back-to-front.
-pub fn draw(world: &World, assets: &Assets) {
-    clear_background(Color::from_hex(0x0a0a1a));
+pub fn draw(world: &World, assets: &Assets, bg: Option<(f32, f32, f32, f32)>) {
+    match bg {
+        Some((r, g, b, a)) => clear_background(Color::new(r, g, b, a)),
+        None => clear_background(Color::from_hex(0x0a0a1a)),
+    }
 
     // Collect drawables: (layer, pos, rot, texture_id, tint, optional source rect)
     let mut drawables: Vec<(DrawLayer, Vec2, f32, TextureId, Color, Option<Rect>)> = world

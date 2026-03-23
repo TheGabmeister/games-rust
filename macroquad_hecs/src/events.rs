@@ -20,7 +20,7 @@ pub enum SfxId {
     EnemyDestroyed,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, serde::Deserialize)]
 pub enum MusicId {
     Spaceshooter,
 }

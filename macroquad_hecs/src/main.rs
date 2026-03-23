@@ -3,6 +3,7 @@
 mod anim_manifest;
 mod animation;
 mod asset_manifest;
+mod campaign;
 mod components;
 mod constants;
 mod events;
@@ -11,6 +12,7 @@ mod handlers;
 mod managers;
 mod prefabs;
 mod resources;
+mod scene;
 mod systems;
 
 use macroquad::prelude::*;

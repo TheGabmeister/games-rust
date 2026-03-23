@@ -1,0 +1,14 @@
+(
+    name: "Asteroid Belt",
+    music: Some(Spaceshooter),
+    background_color: Some((0.05, 0.05, 0.12, 1.0)),
+    entities: [
+        Enemy(kind: Black, pos: (150.0, 100.0)),
+        Enemy(kind: Blue,  pos: (300.0, 150.0)),
+        Enemy(kind: Green, pos: (450.0, 100.0)),
+        Pickup(kind: Life, pos: (180.0, 220.0)),
+        Pickup(kind: Star, pos: (420.0, 220.0)),
+        Powerup(effect: Bolt, pos: (260.0, 280.0)),
+        Powerup(effect: Shield, pos: (340.0, 280.0)),
+    ],
+)

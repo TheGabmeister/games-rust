@@ -1,73 +1,29 @@
 use hecs::World;
+use macroquad::prelude::*;
 
+use crate::campaign::Campaign;
 use crate::events::{
     EnemyDestroyed, GameStarted, PickupCollected, PlayMusic, PlaySfx, PlayerDied,
     PowerupCollected, StageCleared,
 };
 use crate::handlers;
-use crate::managers::{AnimationDb, Assets};
-use crate::prefabs;
+use crate::managers::Assets;
 use crate::resources::{GameState, Resources};
+use crate::scene::{enter_gameplay_scene, ActiveScene};
 use crate::systems::{self, render};
 
 pub struct Game {
     world: World,
     res: Resources,
-}
-
-fn spawn_entities(world: &mut World, anim_db: &AnimationDb) {
-    prefabs::spawn_player(world);
-
-    // Spawn a few enemies to demonstrate the template.
-    prefabs::spawn_enemy(
-        world,
-        crate::components::EnemyKind::Black,
-        macroquad::prelude::vec2(150.0, 100.0),
-    );
-    prefabs::spawn_enemy(
-        world,
-        crate::components::EnemyKind::Blue,
-        macroquad::prelude::vec2(300.0, 150.0),
-    );
-    prefabs::spawn_enemy(
-        world,
-        crate::components::EnemyKind::Green,
-        macroquad::prelude::vec2(450.0, 100.0),
-    );
-
-    // Initial collectibles/powerups at run start.
-    prefabs::spawn_pickup(
-        world,
-        crate::components::PickupKind::Life,
-        macroquad::prelude::vec2(180.0, 220.0),
-    );
-    prefabs::spawn_pickup(
-        world,
-        crate::components::PickupKind::Star,
-        macroquad::prelude::vec2(420.0, 220.0),
-    );
-    prefabs::spawn_powerup(
-        world,
-        crate::components::PowerupEffect::Bolt,
-        macroquad::prelude::vec2(260.0, 280.0),
-    );
-    prefabs::spawn_powerup(
-        world,
-        crate::components::PowerupEffect::Shield,
-        macroquad::prelude::vec2(340.0, 280.0),
-    );
-
-    // Animated character demo — cycles through all clips.
-    prefabs::spawn_old_hero(world, anim_db, macroquad::prelude::vec2(300.0, 400.0));
+    campaign: Campaign,
+    active_scene: ActiveScene,
 }
 
 impl Game {
-    /// Load all assets and set up the initial world state.
-    /// Must be called from an async context (macroquad main is already async).
     pub async fn new() -> Self {
         let assets = Assets::load().await;
         let mut res = Resources::new(assets);
-        let mut world = World::new();
+        let world = World::new();
 
         // Register event handlers (observer pattern).
         res.event_registry.on::<GameStarted>(handlers::on_game_started);
@@ -79,11 +35,14 @@ impl Game {
         res.event_registry.on::<PlaySfx>(handlers::on_play_sfx);
         res.event_registry.on::<PlayMusic>(handlers::on_play_music);
 
-        spawn_entities(&mut world, &res.anim_db);
+        let campaign = Campaign::load("assets/scenes");
 
-        res.events.emit(GameStarted);
-
-        Self { world, res }
+        Self {
+            world,
+            res,
+            campaign,
+            active_scene: ActiveScene::Menu,
+        }
     }
 
     pub fn capture_input(&mut self) {
@@ -92,54 +51,137 @@ impl Game {
 
     /// Fixed-timestep update (called at 60 Hz).
     pub fn update(&mut self, dt: f32) {
-        // Debug toggle
+        // Debug toggle (always available)
         if self.res.input.debug_toggle_pressed {
             self.res.director.debug_mode = !self.res.director.debug_mode;
         }
 
-        if self.res.director.state == GameState::Playing {
-            systems::system_tick_powerups(&mut self.world, dt);
-            systems::system_animate(&mut self.world, &self.res.anim_db, dt);
-            systems::system_anim_demo(&mut self.world, &self.res.anim_db, dt);
-            systems::system_player_movement(&mut self.world, &self.res.input, dt);
-            systems::system_player_fire(
-                &mut self.world,
-                &self.res.input,
-                &mut self.res.events,
-                dt,
-            );
-
-            systems::system_enemy_movement(&mut self.world);
-            systems::system_enemy_fire(&mut self.world, &mut self.res.events, dt);
-
-            systems::system_integrate(&mut self.world, dt);
-            systems::system_cull_offscreen(&self.world, &mut self.res.despawns);
-            systems::system_lifetime(&mut self.world, &mut self.res.despawns, dt);
-            systems::system_apply_despawns(&mut self.world, &mut self.res.despawns);
-
-            systems::system_collision(&self.world, &mut self.res.events, &mut self.res.despawns);
-
-            // React to events (score, despawns, state transitions)
-            systems::system_process_events(
-                &mut self.world,
-                &mut self.res.events,
-                &self.res.event_registry,
-                &mut self.res.director,
-                &mut self.res.despawns,
-                &mut self.res.sfx,
-                &mut self.res.music,
-            );
-            systems::system_apply_despawns(&mut self.world, &mut self.res.despawns);
-        } else if self.res.input.confirm_pressed {
-            self.restart_run();
+        match self.active_scene {
+            ActiveScene::Menu => self.update_menu(),
+            ActiveScene::Gameplay => self.update_gameplay(dt),
         }
 
         self.res.input.clear_transients();
     }
 
+    fn update_menu(&mut self) {
+        if self.res.input.confirm_pressed {
+            // New game: reset director, start campaign from scene 0.
+            self.res.director.reset_run();
+            self.campaign.current_index = 0;
+            enter_gameplay_scene(&mut self.world, &mut self.res, self.campaign.current_scene());
+            self.active_scene = ActiveScene::Gameplay;
+        }
+    }
+
+    fn update_gameplay(&mut self, dt: f32) {
+        match self.res.director.state {
+            GameState::Playing => {
+                systems::system_tick_powerups(&mut self.world, dt);
+                systems::system_animate(&mut self.world, &self.res.anim_db, dt);
+                systems::system_anim_demo(&mut self.world, &self.res.anim_db, dt);
+                systems::system_player_movement(&mut self.world, &self.res.input, dt);
+                systems::system_player_fire(
+                    &mut self.world,
+                    &self.res.input,
+                    &mut self.res.events,
+                    dt,
+                );
+
+                systems::system_enemy_movement(&mut self.world);
+                systems::system_enemy_fire(&mut self.world, &mut self.res.events, dt);
+
+                systems::system_integrate(&mut self.world, dt);
+                systems::system_cull_offscreen(&self.world, &mut self.res.despawns);
+                systems::system_lifetime(&mut self.world, &mut self.res.despawns, dt);
+                systems::system_apply_despawns(&mut self.world, &mut self.res.despawns);
+
+                systems::system_collision(
+                    &self.world,
+                    &mut self.res.events,
+                    &mut self.res.despawns,
+                );
+
+                systems::system_process_events(
+                    &mut self.world,
+                    &mut self.res.events,
+                    &self.res.event_registry,
+                    &mut self.res.director,
+                    &mut self.res.despawns,
+                    &mut self.res.sfx,
+                    &mut self.res.music,
+                );
+                systems::system_apply_despawns(&mut self.world, &mut self.res.despawns);
+
+                // After event processing, check if stage was cleared and advance campaign.
+                if self.res.director.state == GameState::Won {
+                    if self.campaign.has_next() {
+                        self.campaign.advance();
+                        enter_gameplay_scene(
+                            &mut self.world,
+                            &mut self.res,
+                            self.campaign.current_scene(),
+                        );
+                    }
+                    // else: final scene cleared — stay in Won state, draw() shows overlay
+                }
+            }
+            GameState::Won | GameState::Lost => {
+                if self.res.input.confirm_pressed {
+                    self.world.clear();
+                    self.active_scene = ActiveScene::Menu;
+                }
+            }
+        }
+    }
+
     /// Render (called every frame — not fixed-timestep).
     pub fn draw(&self) {
-        render::draw(&self.world, &self.res.assets);
+        match self.active_scene {
+            ActiveScene::Menu => self.draw_menu(),
+            ActiveScene::Gameplay => self.draw_gameplay(),
+        }
+    }
+
+    fn draw_menu(&self) {
+        clear_background(Color::from_hex(0x0a0a1a));
+
+        let title = "MACROQUAD HECS";
+        let dim = measure_text(title, None, 48, 1.0);
+        draw_text(
+            title,
+            (crate::constants::SCREEN_WIDTH - dim.width) * 0.5,
+            crate::constants::SCREEN_HEIGHT * 0.35,
+            48.0,
+            WHITE,
+        );
+
+        let prompt = "PRESS ENTER TO START";
+        let dim2 = measure_text(prompt, None, 28, 1.0);
+        draw_text(
+            prompt,
+            (crate::constants::SCREEN_WIDTH - dim2.width) * 0.5,
+            crate::constants::SCREEN_HEIGHT * 0.5,
+            28.0,
+            Color::from_hex(0xaaaaaa),
+        );
+
+        // Show high score if any
+        if self.res.director.high_score > 0 {
+            let hs = format!("BEST: {}", self.res.director.high_score);
+            let dim3 = measure_text(&hs, None, 22, 1.0);
+            draw_text(
+                &hs,
+                (crate::constants::SCREEN_WIDTH - dim3.width) * 0.5,
+                crate::constants::SCREEN_HEIGHT * 0.6,
+                22.0,
+                Color::from_hex(0xffd700),
+            );
+        }
+    }
+
+    fn draw_gameplay(&self) {
+        render::draw(&self.world, &self.res.assets, self.campaign.current_scene().background_color);
         render::draw_hud(&self.res.director);
 
         #[cfg(debug_assertions)]
@@ -148,13 +190,5 @@ impl Game {
             systems::system_draw_debug_ui(&self.world);
             egui_macroquad::draw();
         }
-    }
-
-    fn restart_run(&mut self) {
-        self.world.clear();
-        spawn_entities(&mut self.world, &self.res.anim_db);
-        self.res.events.drain_raw();
-        self.res.despawns.clear();
-        self.res.director.reset_run();
     }
 }

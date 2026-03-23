@@ -8,3 +8,5 @@ macroquad = { version = "0.4.14", features = ["audio"] }
 hecs = "0.11.0"
 rand = "0.10.0"
 egui-macroquad = "0.17.3"
+serde = { version = "1", features = ["derive"] }
+ron = "0.9"
