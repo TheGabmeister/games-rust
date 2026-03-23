@@ -14,36 +14,59 @@ No tests or CI. No linter configured — use `cargo clippy` if needed.
 
 ## Architecture
 
-Space shooter game/template using **macroquad 0.4.14** + **hecs 0.11.0** ECS + **egui-macroquad 0.17.3** + **rand 0.10.0**. Rust edition 2024.
+Space shooter game/template using **macroquad 0.4.14** + **hecs 0.11.0** ECS + **egui-macroquad 0.17.3** + **serde 1** + **ron 0.9** + **rand 0.10.0**. Rust edition 2024.
 
 ### Core loop
 
-`main.rs` runs a fixed-timestep loop. `Game` owns a `hecs::World` and a `Resources` struct. Three separate phases per frame:
+`main.rs` runs a fixed-timestep loop. `Game` owns a `hecs::World`, a `Resources` struct, a `Campaign`, and an `ActiveScene` enum. Three separate phases per frame:
 1. `game.capture_input()` — called once before the fixed-step loop
 2. `game.update(FIXED_DT)` — called at 60 Hz (may run multiple times per frame)
 3. `game.draw()` — called once per frame at variable rate
 
+### Scene & campaign system
+
+The game uses a **data-driven scene system** with RON files. Key files: `scene.rs` (types + loading), `campaign.rs` (progression).
+
+**`ActiveScene` enum** on `Game` controls which screen is active:
+- `Menu` — title screen, no entities in world, no gameplay systems run
+- `Gameplay` — entities loaded from current campaign scene, all gameplay systems run
+
+**Campaign flow:**
+1. At startup, `Campaign::load("assets/scenes")` reads `campaign.ron` and all referenced `.ron` scene files (loaded once, stored in memory)
+2. Menu → press Enter → `director.reset_run()`, `campaign.current_index = 0`, `enter_gameplay_scene()`
+3. Stage cleared (all enemies dead) → `on_stage_cleared` sets `GameState::Won` → next `update()` tick checks `campaign.has_next()`:
+   - If more scenes: `campaign.advance()` + `enter_gameplay_scene()` (score/lives carry over)
+   - If final scene: stays in `GameState::Won` (overlay shown)
+4. Won/Lost + confirm → `world.clear()` + return to `ActiveScene::Menu`
+
+**`enter_gameplay_scene()`** (in `scene.rs`): clears world, drains events, clears despawns, spawns player, iterates `SceneDef.entities` calling prefab spawn functions, emits `PlayMusic` if scene specifies music, sets `GameState::Playing`.
+
+**Adding a new scene:**
+1. Create `assets/scenes/level_XX.ron` with `SceneDef` format (name, music, background_color, entities)
+2. Add the filename to `assets/scenes/campaign.ron`
+
+**RON entity format:** `Enemy(kind: Black, pos: (150.0, 100.0))`, `Pickup(kind: Life, pos: (...))`, `Powerup(effect: Bolt, pos: (...))`. Enum variants must match `EnemyKind`, `PickupKind`, `PowerupEffect` (all derive `serde::Deserialize`). `MusicId` also derives `Deserialize`.
+
 ### System execution order (in `game.rs`)
 
-**`update(dt)`:**
+**`update(dt)` — `ActiveScene::Gameplay` + `GameState::Playing`:**
 1. Debug toggle (F1)
-2. **Playing state only:**
-   - `system_tick_powerups`
-   - `system_animate` → `system_anim_demo`
-   - `system_player_movement` → `system_player_fire`
-   - `system_enemy_movement` → `system_enemy_fire`
-   - `system_integrate`
-   - `system_cull_offscreen` → `system_lifetime` → **`system_apply_despawns`**
-   - `system_collision`
-   - `system_process_events` → **`system_apply_despawns`** (second pass)
-3. `input.clear_transients()`
+2. `system_tick_powerups`
+3. `system_animate` → `system_anim_demo`
+4. `system_player_movement` → `system_player_fire`
+5. `system_enemy_movement` → `system_enemy_fire`
+6. `system_integrate`
+7. `system_cull_offscreen` → `system_lifetime` → **`system_apply_despawns`**
+8. `system_collision`
+9. `system_process_events` → **`system_apply_despawns`** (second pass)
+10. Campaign advancement check (if `GameState::Won` after events)
+11. `input.clear_transients()`
 
 `system_apply_despawns` runs **twice** per frame — after lifetime/culling and after event processing.
 
-**`draw()`:**
-1. `render::draw` (sprites sorted by `DrawLayer`)
-2. `render::draw_hud`
-3. Debug mode only (`#[cfg(debug_assertions)]`): collider wireframes + egui entity window + `egui_macroquad::draw()`
+**`draw()` branches on `ActiveScene`:**
+- `Menu` → title text + "Press Enter" prompt + high score
+- `Gameplay` → `render::draw` (sprites sorted by `DrawLayer`, per-scene background color) + `render::draw_hud` + debug overlays
 
 ### Resource layout
 
@@ -51,7 +74,7 @@ Space shooter game/template using **macroquad 0.4.14** + **hecs 0.11.0** ECS + *
 - `Assets` — `HashMap<TextureId, Texture2D>` and `HashMap<SfxId/MusicId, Sound>`, loaded from `asset_manifest.rs` paths
 - `AnimationDb` — immutable database of `SpriteSheetDef` and `AnimClip` entries, built from `anim_manifest.rs` at startup
 - `GameDirector` — score, lives, high score, `GameState` (Playing/Won/Lost), debug_mode; pure game logic, no audio coupling
-- `SfxManager` / `MusicManager` — thin wrappers around macroquad audio, only accessed by audio event handlers
+- `SfxManager` / `MusicManager` — thin wrappers around macroquad audio, only accessed by audio event handlers. `MusicManager` tracks the currently playing track and stops it before starting a new one (no overlapping music).
 - `InputState` — per-frame keyboard snapshot (move_axis, fire_held, etc.)
 - `EventQueue` — type-erased deferred event queue (emit during systems, dispatched in `system_process_events`)
 - `EventRegistry` — maps event types to handler functions via `TypeId`, registered at startup
@@ -97,7 +120,7 @@ UV-based atlas animation using uniform-grid sprite sheets (e.g. Aseprite exports
 
 ### Entity spawning
 
-`prefabs.rs` has factory functions (`spawn_player`, `spawn_enemy`, `spawn_player_bullet`, `spawn_old_hero`, etc.) that bundle components into archetypes. Animated prefabs take `&AnimationDb` to initialize `Animator` and `SpriteRegion`. Restart uses `world.clear()` + re-spawn.
+`prefabs.rs` has factory functions (`spawn_player`, `spawn_enemy`, `spawn_player_bullet`, `spawn_old_hero`, etc.) that bundle components into archetypes. Animated prefabs take `&AnimationDb` to initialize `Animator` and `SpriteRegion`. Scene transitions use `world.clear()` + re-spawn from scene data.
 
 ## Key hecs patterns
 
