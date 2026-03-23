@@ -74,7 +74,8 @@ pub fn load_scene_def(path: &str) -> SceneDef {
         .unwrap_or_else(|e| panic!("Failed to read scene file '{}': {}", path, e));
     let text = std::str::from_utf8(&bytes)
         .unwrap_or_else(|e| panic!("Scene file '{}' is not valid UTF-8: {}", path, e));
-    ron::from_str(text)
+    let options = ron::Options::default().with_default_extension(ron::extensions::Extensions::IMPLICIT_SOME);
+    options.from_str(text)
         .unwrap_or_else(|e| panic!("Failed to parse scene file '{}': {}", path, e))
 }
 
