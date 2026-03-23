@@ -32,15 +32,22 @@ pub fn system_process_events(
     let mut stage_clear_queued = false;
 
     while let Some(event) = pending.pop_front() {
-        {
+        let deferred = {
             let mut ctx = EventContext {
                 world,
                 director,
                 despawns,
                 sfx,
                 music,
+                deferred: Vec::new(),
             };
             registry.dispatch(&event, &mut ctx);
+            ctx.deferred
+        };
+
+        // Append any follow-up events emitted by handlers.
+        for ev in deferred {
+            pending.push_back(ev);
         }
 
         if !stage_clear_queued

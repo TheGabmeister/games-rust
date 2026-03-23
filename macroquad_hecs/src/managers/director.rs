@@ -3,8 +3,6 @@ use hecs::{Entity, World};
 use crate::components::{ActivePowerups, PickupKind, Player, PowerupEffect, ScoreValue};
 use crate::constants::PLAYER_START_LIVES;
 use crate::constants::{PLAYER_MAX_LIVES, SCORE_PICKUP_STAR};
-use crate::events::SfxId;
-use crate::managers::SfxManager;
 use crate::prefabs;
 use crate::resources::{DespawnQueue, GameState};
 
@@ -55,19 +53,13 @@ impl GameDirector {
         }
     }
 
-    pub fn on_enemy_destroyed(&mut self, world: &World, entity: Entity, sfx: &mut SfxManager) {
-        sfx.play_sound(SfxId::EnemyDestroyed);
+    pub fn on_enemy_destroyed(&mut self, world: &World, entity: Entity) {
         if let Ok(score_value) = world.get::<&ScoreValue>(entity) {
             self.update_score(score_value.0);
         }
     }
 
-    pub fn on_player_died(
-        &mut self,
-        world: &mut World,
-        despawns: &mut DespawnQueue,
-        sfx: &mut SfxManager,
-    ) {
+    pub fn on_player_died(&mut self, world: &mut World, despawns: &mut DespawnQueue) {
         let players: Vec<Entity> = world
             .query::<(Entity, &Player)>()
             .iter()
@@ -75,7 +67,6 @@ impl GameDirector {
             .collect();
 
         despawns.extend(players);
-        sfx.play_sound(SfxId::PlayerDied);
         self.update_lives(-1);
         if self.lives == 0 {
             self.update_high_score();
@@ -98,7 +89,6 @@ impl GameDirector {
         player: Entity,
         effect: PowerupEffect,
         duration: f32,
-        sfx: &SfxManager,
     ) {
         if let Ok(mut powerups) = world.get::<&mut ActivePowerups>(player) {
             match effect {
@@ -109,7 +99,6 @@ impl GameDirector {
                     powerups.shield_remaining = powerups.shield_remaining.max(duration);
                 }
             }
-            sfx.play_sound(SfxId::PlayerPowerup);
         }
     }
 

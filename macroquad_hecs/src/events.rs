@@ -73,6 +73,12 @@ impl GameEvent for PowerupCollected {}
 pub struct StageCleared;
 impl GameEvent for StageCleared {}
 
+#[derive(Debug)]
+pub struct PlaySfx {
+    pub id: SfxId,
+}
+impl GameEvent for PlaySfx {}
+
 // ---------------------------------------------------------------------------
 // Handler context — bundles all mutable resources a handler might need.
 // ---------------------------------------------------------------------------
@@ -83,6 +89,15 @@ pub struct EventContext<'a> {
     pub despawns: &'a mut DespawnQueue,
     pub sfx: &'a mut SfxManager,
     pub music: &'a mut MusicManager,
+    pub(crate) deferred: Vec<ErasedEvent>,
+}
+
+impl EventContext<'_> {
+    /// Emit a follow-up event from within a handler.
+    /// It will be dispatched after the current event's handlers finish.
+    pub fn emit<E: GameEvent>(&mut self, event: E) {
+        self.deferred.push(ErasedEvent::new(event));
+    }
 }
 
 // ---------------------------------------------------------------------------

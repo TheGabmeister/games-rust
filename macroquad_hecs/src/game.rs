@@ -1,7 +1,8 @@
 use hecs::World;
 
 use crate::events::{
-    EnemyDestroyed, GameStarted, PickupCollected, PlayerDied, PowerupCollected, StageCleared,
+    EnemyDestroyed, GameStarted, PickupCollected, PlaySfx, PlayerDied, PowerupCollected,
+    StageCleared,
 };
 use crate::handlers;
 use crate::managers::Assets;
@@ -72,6 +73,7 @@ impl Game {
         res.event_registry.on::<PickupCollected>(handlers::on_pickup_collected);
         res.event_registry.on::<PowerupCollected>(handlers::on_powerup_collected);
         res.event_registry.on::<StageCleared>(handlers::on_stage_cleared);
+        res.event_registry.on::<PlaySfx>(handlers::on_play_sfx);
 
         spawn_entities(&mut world);
 
@@ -94,10 +96,15 @@ impl Game {
         if self.res.director.state == GameState::Playing {
             systems::system_tick_powerups(&mut self.world, dt);
             systems::system_player_movement(&mut self.world, &self.res.input, dt);
-            systems::system_player_fire(&mut self.world, &self.res.input, &self.res.sfx, dt);
+            systems::system_player_fire(
+                &mut self.world,
+                &self.res.input,
+                &mut self.res.events,
+                dt,
+            );
 
             systems::system_enemy_movement(&mut self.world);
-            systems::system_enemy_fire(&mut self.world, &self.res.sfx, dt);
+            systems::system_enemy_fire(&mut self.world, &mut self.res.events, dt);
 
             systems::system_integrate(&mut self.world, dt);
             systems::system_cull_offscreen(&self.world, &mut self.res.despawns);
