@@ -11,7 +11,8 @@ mod transitions;
 fn window_conf() -> Conf {
     Conf {
         window_title: "macroquad_fancy".to_string(),
-        fullscreen: true,
+        window_width: 1600,
+        window_height: 900,
         ..Default::default()
     }
 }
