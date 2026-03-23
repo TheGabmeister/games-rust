@@ -244,11 +244,10 @@ impl Game {
 
         // Apply screen shake via camera offset
         let (sx, sy) = self.shake.offset();
-        set_camera(&Camera2D {
-            target: vec2(screen_width() / 2.0 + sx, screen_height() / 2.0 + sy),
-            zoom: vec2(2.0 / screen_width(), -2.0 / screen_height()),
-            ..Default::default()
-        });
+        set_camera(&Camera2D::from_display_rect(Rect::new(
+            sx, sy + screen_height(),
+            screen_width(), -screen_height(),
+        )));
 
         // Game entities (shaken)
         if self.player.alive { self.player.draw(); }
