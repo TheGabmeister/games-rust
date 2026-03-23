@@ -85,6 +85,8 @@ pub struct InputState {
     pub fire_held: bool,
     pub confirm_pressed: bool,
     pub cancel_pressed: bool,
+    pub nav_up_pressed: bool,
+    pub nav_down_pressed: bool,
     pub debug_toggle_pressed: bool,
 }
 
@@ -92,6 +94,8 @@ impl InputState {
     pub fn clear_transients(&mut self) {
         self.confirm_pressed = false;
         self.cancel_pressed = false;
+        self.nav_up_pressed = false;
+        self.nav_down_pressed = false;
         self.debug_toggle_pressed = false;
     }
 }

@@ -24,6 +24,7 @@ pub enum EntityDef {
     Enemy { kind: EnemyKind, pos: (f32, f32) },
     Pickup { kind: PickupKind, pos: (f32, f32) },
     Powerup { effect: PowerupEffect, pos: (f32, f32) },
+    OldHero { pos: (f32, f32) },
 }
 
 // ---------------------------------------------------------------------------
@@ -34,6 +35,7 @@ pub enum EntityDef {
 pub enum ActiveScene {
     Menu,
     Gameplay,
+    CharacterDemo,
 }
 
 // ---------------------------------------------------------------------------
@@ -72,6 +74,9 @@ pub fn enter_gameplay_scene(
             EntityDef::Powerup { effect, pos } => {
                 prefabs::spawn_powerup(world, *effect, vec2(pos.0, pos.1));
             }
+            EntityDef::OldHero { pos } => {
+                prefabs::spawn_old_hero(world, &res.anim_db, vec2(pos.0, pos.1));
+            }
         }
     }
 
@@ -80,4 +85,36 @@ pub fn enter_gameplay_scene(
     }
 
     res.director.state = GameState::Playing;
+}
+
+/// Spawn entities from a scene without player or gameplay state — used for demo/showcase scenes.
+pub fn enter_character_scene(
+    world: &mut World,
+    res: &mut Resources,
+    scene_def: &SceneDef,
+) {
+    world.clear();
+    res.events.drain_raw();
+    res.despawns.clear();
+
+    for entity_def in &scene_def.entities {
+        match entity_def {
+            EntityDef::Enemy { kind, pos } => {
+                prefabs::spawn_enemy(world, *kind, vec2(pos.0, pos.1));
+            }
+            EntityDef::Pickup { kind, pos } => {
+                prefabs::spawn_pickup(world, *kind, vec2(pos.0, pos.1));
+            }
+            EntityDef::Powerup { effect, pos } => {
+                prefabs::spawn_powerup(world, *effect, vec2(pos.0, pos.1));
+            }
+            EntityDef::OldHero { pos } => {
+                prefabs::spawn_old_hero(world, &res.anim_db, vec2(pos.0, pos.1));
+            }
+        }
+    }
+
+    if let Some(id) = scene_def.music {
+        res.events.emit(PlayMusic { id });
+    }
 }

@@ -9,7 +9,7 @@ use crate::events::{
 use crate::handlers;
 use crate::managers::Assets;
 use crate::resources::{GameState, Resources};
-use crate::scene::{enter_gameplay_scene, ActiveScene};
+use crate::scene::{enter_character_scene, enter_gameplay_scene, load_scene_def, ActiveScene, SceneDef};
 use crate::systems::{self, render};
 
 pub struct Game {
@@ -17,6 +17,8 @@ pub struct Game {
     res: Resources,
     campaign: Campaign,
     active_scene: ActiveScene,
+    demo_scene: SceneDef,
+    menu_selection: usize,
 }
 
 impl Game {
@@ -36,12 +38,15 @@ impl Game {
         res.event_registry.on::<PlayMusic>(handlers::on_play_music);
 
         let campaign = Campaign::load("assets/scenes");
+        let demo_scene = load_scene_def("assets/scenes/demo_character.ron");
 
         Self {
             world,
             res,
             campaign,
             active_scene: ActiveScene::Menu,
+            demo_scene,
+            menu_selection: 0,
         }
     }
 
@@ -59,18 +64,48 @@ impl Game {
         match self.active_scene {
             ActiveScene::Menu => self.update_menu(),
             ActiveScene::Gameplay => self.update_gameplay(dt),
+            ActiveScene::CharacterDemo => self.update_character_demo(dt),
         }
 
         self.res.input.clear_transients();
     }
 
     fn update_menu(&mut self) {
+        if self.res.input.nav_up_pressed && self.menu_selection > 0 {
+            self.menu_selection -= 1;
+        }
+        if self.res.input.nav_down_pressed && self.menu_selection < 1 {
+            self.menu_selection += 1;
+        }
+
         if self.res.input.confirm_pressed {
-            // New game: reset director, start campaign from scene 0.
-            self.res.director.reset_run();
-            self.campaign.current_index = 0;
-            enter_gameplay_scene(&mut self.world, &mut self.res, self.campaign.current_scene());
-            self.active_scene = ActiveScene::Gameplay;
+            match self.menu_selection {
+                0 => {
+                    self.res.director.reset_run();
+                    self.campaign.current_index = 0;
+                    enter_gameplay_scene(
+                        &mut self.world,
+                        &mut self.res,
+                        self.campaign.current_scene(),
+                    );
+                    self.active_scene = ActiveScene::Gameplay;
+                }
+                1 => {
+                    enter_character_scene(&mut self.world, &mut self.res, &self.demo_scene);
+                    self.active_scene = ActiveScene::CharacterDemo;
+                }
+                _ => {}
+            }
+        }
+    }
+
+    fn update_character_demo(&mut self, dt: f32) {
+        systems::system_animate(&mut self.world, &self.res.anim_db, dt);
+        systems::system_anim_demo(&mut self.world, &self.res.anim_db, dt);
+
+        if self.res.input.cancel_pressed {
+            self.world.clear();
+            self.active_scene = ActiveScene::Menu;
         }
     }
 
@@ -140,44 +175,91 @@ impl Game {
         match self.active_scene {
             ActiveScene::Menu => self.draw_menu(),
             ActiveScene::Gameplay => self.draw_gameplay(),
+            ActiveScene::CharacterDemo => self.draw_character_demo(),
         }
     }
 
     fn draw_menu(&self) {
+        use crate::constants::{SCREEN_HEIGHT, SCREEN_WIDTH};
+
         clear_background(Color::from_hex(0x0a0a1a));
 
         let title = "MACROQUAD HECS";
         let dim = measure_text(title, None, 48, 1.0);
         draw_text(
             title,
-            (crate::constants::SCREEN_WIDTH - dim.width) * 0.5,
-            crate::constants::SCREEN_HEIGHT * 0.35,
+            (SCREEN_WIDTH - dim.width) * 0.5,
+            SCREEN_HEIGHT * 0.30,
             48.0,
             WHITE,
         );
 
-        let prompt = "PRESS ENTER TO START";
-        let dim2 = measure_text(prompt, None, 28, 1.0);
-        draw_text(
-            prompt,
-            (crate::constants::SCREEN_WIDTH - dim2.width) * 0.5,
-            crate::constants::SCREEN_HEIGHT * 0.5,
-            28.0,
-            Color::from_hex(0xaaaaaa),
-        );
+        let options = ["START GAME", "CHARACTER DEMO"];
+        for (i, label) in options.iter().enumerate() {
+            let y = SCREEN_HEIGHT * 0.48 + i as f32 * 50.0;
+            let dim_opt = measure_text(label, None, 28, 1.0);
+            let color = if i == self.menu_selection {
+                WHITE
+            } else {
+                Color::from_hex(0x666666)
+            };
 
-        // Show high score if any
+            if i == self.menu_selection {
+                draw_text(
+                    ">",
+                    (SCREEN_WIDTH - dim_opt.width) * 0.5 - 30.0,
+                    y,
+                    28.0,
+                    WHITE,
+                );
+            }
+
+            draw_text(
+                label,
+                (SCREEN_WIDTH - dim_opt.width) * 0.5,
+                y,
+                28.0,
+                color,
+            );
+        }
+
         if self.res.director.high_score > 0 {
             let hs = format!("BEST: {}", self.res.director.high_score);
             let dim3 = measure_text(&hs, None, 22, 1.0);
             draw_text(
                 &hs,
-                (crate::constants::SCREEN_WIDTH - dim3.width) * 0.5,
-                crate::constants::SCREEN_HEIGHT * 0.6,
+                (SCREEN_WIDTH - dim3.width) * 0.5,
+                SCREEN_HEIGHT * 0.70,
                 22.0,
                 Color::from_hex(0xffd700),
             );
         }
+    }
+
+    fn draw_character_demo(&self) {
+        use crate::constants::{SCREEN_HEIGHT, SCREEN_WIDTH};
+
+        render::draw(&self.world, &self.res.assets, self.demo_scene.background_color);
+
+        let title = &self.demo_scene.name;
+        let dim = measure_text(title, None, 36, 1.0);
+        draw_text(
+            title,
+            (SCREEN_WIDTH - dim.width) * 0.5,
+            SCREEN_HEIGHT * 0.08,
+            36.0,
+            WHITE,
+        );
+
+        let prompt = "PRESS ESC TO GO BACK";
+        let dim2 = measure_text(prompt, None, 22, 1.0);
+        draw_text(
+            prompt,
+            (SCREEN_WIDTH - dim2.width) * 0.5,
+            SCREEN_HEIGHT * 0.95,
+            22.0,
+            Color::from_hex(0xaaaaaa),
+        );
     }
 
     fn draw_gameplay(&self) {

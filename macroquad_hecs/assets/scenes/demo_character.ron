@@ -1,0 +1,8 @@
+(
+    name: "Character Demo",
+    music: None,
+    background_color: Some((0.05, 0.05, 0.12, 1.0)),
+    entities: [
+        OldHero(pos: (300.0, 400.0)),
+    ],
+)
