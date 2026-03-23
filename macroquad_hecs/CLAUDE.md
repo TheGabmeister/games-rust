@@ -48,18 +48,33 @@ Space shooter game/template using **macroquad 0.4.14** + **hecs 0.11.0** ECS + *
 
 `Resources` groups singleton state into domain managers:
 - `Assets` — `HashMap<TextureId, Texture2D>` and `HashMap<SfxId/MusicId, Sound>`, loaded from `asset_manifest.rs` paths
-- `GameDirector` — score, lives, high score, `GameState` (Playing/Won/Lost), debug_mode; all event reactions route through director methods (`on_enemy_destroyed`, `on_player_died`, `apply_pickup_reward`, `apply_powerup`)
-- `SfxManager` / `MusicManager` — thin wrappers around macroquad audio
+- `GameDirector` — score, lives, high score, `GameState` (Playing/Won/Lost), debug_mode; pure game logic, no audio coupling
+- `SfxManager` / `MusicManager` — thin wrappers around macroquad audio, only accessed by audio event handlers
 - `InputState` — per-frame keyboard snapshot (move_axis, fire_held, etc.)
-- `EventBus` — deferred `GameEvent` queue (emit during systems, drain in `system_process_events`)
+- `EventQueue` — type-erased deferred event queue (emit during systems, dispatched in `system_process_events`)
+- `EventRegistry` — maps event types to handler functions via `TypeId`, registered at startup
 - `DespawnQueue` — entities to remove, applied by `system_apply_despawns`
 
-### Deferred event pattern
+### Observer event system
 
-Systems never mutate world state directly for cross-cutting concerns. Instead:
-- Collision/gameplay systems **emit** `GameEvent` variants to `EventBus`
-- `system_process_events` **drains** the bus and delegates to `GameDirector` methods for scoring, lives, powerups, despawns, state transitions
-- This avoids borrow-checker conflicts between querying and mutating the world
+Uses a **trait-based observer/listener pattern** with type-erased dispatch. Key files: `events.rs` (infrastructure), `handlers.rs` (handler functions), `systems/process_events.rs` (dispatch loop).
+
+**Adding a new event:**
+1. Define a struct in `events.rs` + `impl GameEvent` for it
+2. Write a handler function in `handlers.rs` taking `(&YourEvent, &mut EventContext)`
+3. Register with `event_registry.on::<YourEvent>(handlers::your_handler)` in `Game::new()`
+
+**How it works:**
+- Each event is its own struct implementing the `GameEvent` marker trait (not an enum variant)
+- `EventQueue` stores type-erased `Box<dyn Any>` events keyed by `TypeId`
+- `EventRegistry` maps `TypeId` → `Vec<Box<dyn Fn>>` of handler closures (registered at startup, immutable during dispatch)
+- `EventContext` bundles `&mut World`, `&mut GameDirector`, `&mut DespawnQueue`, `&mut SfxManager`, `&mut MusicManager` so all handlers have the same signature
+- Handlers can emit follow-up events via `ctx.emit(...)` — these are appended to the dispatch queue after the current event's handlers finish
+- Multiple handlers can independently observe the same event type (fan-out)
+
+**Audio is fully decoupled** — gameplay handlers emit `PlaySfx { id }` / `PlayMusic { id }` events instead of calling audio managers directly. Dedicated `on_play_sfx` and `on_play_music` handlers are the only code that touches `SfxManager`/`MusicManager`.
+
+**Borrow-checker design:** `EventQueue` and `EventRegistry` are separate fields on `Resources` to avoid conflicting borrows during dispatch (queue is drained before handlers run; registry is borrowed immutably).
 
 ### Entity spawning
 

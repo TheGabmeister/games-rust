@@ -44,10 +44,6 @@ pub struct DespawnQueue {
 }
 
 impl DespawnQueue {
-    pub fn request(&mut self, entity: Entity) {
-        self.entities.insert(entity);
-    }
-
     pub fn extend<I>(&mut self, entities: I)
     where
         I: IntoIterator<Item = Entity>,

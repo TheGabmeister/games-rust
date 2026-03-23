@@ -1,8 +1,8 @@
 use hecs::World;
 
 use crate::events::{
-    EnemyDestroyed, GameStarted, PickupCollected, PlaySfx, PlayerDied, PowerupCollected,
-    StageCleared,
+    EnemyDestroyed, GameStarted, PickupCollected, PlayMusic, PlaySfx, PlayerDied,
+    PowerupCollected, StageCleared,
 };
 use crate::handlers;
 use crate::managers::Assets;
@@ -74,6 +74,7 @@ impl Game {
         res.event_registry.on::<PowerupCollected>(handlers::on_powerup_collected);
         res.event_registry.on::<StageCleared>(handlers::on_stage_cleared);
         res.event_registry.on::<PlaySfx>(handlers::on_play_sfx);
+        res.event_registry.on::<PlayMusic>(handlers::on_play_music);
 
         spawn_entities(&mut world);
 

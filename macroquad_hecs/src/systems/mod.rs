@@ -12,4 +12,3 @@ pub use despawn::*;
 pub use gameplay::*;
 pub use input::*;
 pub use process_events::*;
-pub use render::*;

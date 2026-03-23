@@ -42,7 +42,6 @@ pub fn spawn_enemy(world: &mut World, kind: EnemyKind, pos: Vec2) -> Entity {
             ENEMY_SPEED_GREEN,
             SCORE_ENEMY_GREEN,
         ),
-        EnemyKind::Red => (TextureId::EnemyShipRed, ENEMY_SPEED_RED, SCORE_ENEMY_RED),
     };
 
     world.spawn((
@@ -139,17 +138,5 @@ pub fn spawn_powerup(world: &mut World, effect: PowerupEffect, pos: Vec2) -> Ent
         },
         PowerupPickup { effect, duration },
         DrawLayer(DRAW_PICKUP),
-    ))
-}
-
-pub fn spawn_obstacle(world: &mut World, pos: Vec2, size: Vec2) -> Entity {
-    world.spawn((
-        Transform::at(pos.x, pos.y),
-        BoxCollider::new(size.x, size.y),
-        CollisionLayer {
-            member: LAYER_ENEMY, // treated as enemy-side for collision
-            mask: LAYER_PLAYER | LAYER_PLAYER_BULLET,
-        },
-        DrawLayer(DRAW_BACKGROUND),
     ))
 }

@@ -1,22 +1,28 @@
 use crate::events::{
-    EnemyDestroyed, EventContext, GameStarted, PickupCollected, PlaySfx, PlayerDied,
-    PowerupCollected, SfxId, StageCleared,
+    EnemyDestroyed, EventContext, GameStarted, MusicId, PickupCollected, PlayMusic, PlaySfx,
+    PlayerDied, PowerupCollected, SfxId, StageCleared,
 };
 
 // ---------------------------------------------------------------------------
-// Audio handler — the only handler that touches SfxManager
+// Audio handlers — the only handlers that touch SfxManager / MusicManager
 // ---------------------------------------------------------------------------
 
 pub fn on_play_sfx(event: &PlaySfx, ctx: &mut EventContext) {
     ctx.sfx.play_sound(event.id);
 }
 
+pub fn on_play_music(event: &PlayMusic, ctx: &mut EventContext) {
+    ctx.music.play_music(event.id);
+}
+
 // ---------------------------------------------------------------------------
-// Gameplay handlers — emit PlaySfx instead of calling sfx directly
+// Gameplay handlers — emit PlaySfx/PlayMusic instead of calling audio directly
 // ---------------------------------------------------------------------------
 
-pub fn on_game_started(_event: &GameStarted, _ctx: &mut EventContext) {
-    // Currently a no-op (music play is commented out upstream).
+pub fn on_game_started(_event: &GameStarted, ctx: &mut EventContext) {
+    ctx.emit(PlayMusic {
+        id: MusicId::Spaceshooter,
+    });
 }
 
 pub fn on_enemy_destroyed(event: &EnemyDestroyed, ctx: &mut EventContext) {

@@ -103,9 +103,6 @@ impl Sprite {
             tint: WHITE,
         }
     }
-    pub fn tinted(texture: TextureId, tint: Color) -> Self {
-        Self { texture, tint }
-    }
 }
 
 /// Draw ordering: lower = rendered first = behind.
@@ -165,7 +162,6 @@ pub enum EnemyKind {
     Black,
     Blue,
     Green,
-    Red,
 }
 
 #[derive(Clone, Copy, Debug)]

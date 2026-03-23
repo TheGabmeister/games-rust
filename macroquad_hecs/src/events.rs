@@ -25,13 +25,6 @@ pub enum MusicId {
     Spaceshooter,
 }
 
-#[derive(Clone, Copy, Debug)]
-pub enum MusicCommand {
-    Play(MusicId),
-    Stop,
-    SetVolume(f32),
-}
-
 // ---------------------------------------------------------------------------
 // Game event trait + concrete event structs
 // ---------------------------------------------------------------------------
@@ -47,6 +40,7 @@ pub struct PlayerDied;
 impl GameEvent for PlayerDied {}
 
 #[derive(Debug)]
+#[allow(dead_code)] // Fields form the event's data contract for current + future handlers.
 pub struct EnemyDestroyed {
     pub entity: Entity,
     pub kind: EnemyKind,
@@ -54,6 +48,7 @@ pub struct EnemyDestroyed {
 impl GameEvent for EnemyDestroyed {}
 
 #[derive(Debug)]
+#[allow(dead_code)]
 pub struct PickupCollected {
     pub entity: Entity,
     pub kind: PickupKind,
@@ -61,6 +56,7 @@ pub struct PickupCollected {
 impl GameEvent for PickupCollected {}
 
 #[derive(Debug)]
+#[allow(dead_code)]
 pub struct PowerupCollected {
     pub entity: Entity,
     pub player: Entity,
@@ -78,6 +74,12 @@ pub struct PlaySfx {
     pub id: SfxId,
 }
 impl GameEvent for PlaySfx {}
+
+#[derive(Debug)]
+pub struct PlayMusic {
+    pub id: MusicId,
+}
+impl GameEvent for PlayMusic {}
 
 // ---------------------------------------------------------------------------
 // Handler context — bundles all mutable resources a handler might need.
@@ -130,10 +132,6 @@ pub struct EventQueue {
 impl EventQueue {
     pub fn emit<E: GameEvent>(&mut self, event: E) {
         self.queue.push(ErasedEvent::new(event));
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.queue.is_empty()
     }
 
     pub fn drain_raw(&mut self) -> Vec<ErasedEvent> {
