@@ -60,6 +60,10 @@ impl DespawnQueue {
     pub fn clear(&mut self) {
         self.entities.clear();
     }
+
+    pub fn contains(&self, entity: Entity) -> bool {
+        self.entities.contains(&entity)
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

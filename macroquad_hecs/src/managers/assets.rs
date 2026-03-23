@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use macroquad::audio::{Sound, load_sound};
-use macroquad::prelude::{Texture2D, load_texture};
+use macroquad::prelude::{FilterMode, Texture2D, load_texture};
 
 use crate::components::TextureId;
 use crate::constants::ASSETS_DIR;
@@ -41,9 +41,11 @@ impl Assets {
 
     async fn load_texture(file: &str) -> Texture2D {
         let path = format!("{}/{}", ASSETS_DIR, file);
-        load_texture(&path)
+        let texture = load_texture(&path)
             .await
-            .unwrap_or_else(|_| panic!("Failed to load texture: {}", path))
+            .unwrap_or_else(|_| panic!("Failed to load texture: {}", path));
+        texture.set_filter(FilterMode::Nearest);
+        texture
     }
 
     async fn load_audio(file: &str) -> Sound {

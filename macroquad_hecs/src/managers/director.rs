@@ -41,6 +41,7 @@ impl GameDirector {
 
     pub fn update_score(&mut self, points: u32) {
         self.score = self.score.saturating_add(points);
+        self.update_high_score();
     }
 
     pub fn update_lives(&mut self, amount: i32) {
@@ -77,6 +78,7 @@ impl GameDirector {
         sfx.play_sound(SfxId::PlayerDied);
         self.update_lives(-1);
         if self.lives == 0 {
+            self.update_high_score();
             self.state = GameState::Lost;
         } else {
             prefabs::spawn_player(world);
@@ -88,5 +90,10 @@ impl GameDirector {
             PickupKind::Life => self.update_lives(1),
             PickupKind::Star => self.update_score(SCORE_PICKUP_STAR),
         }
+    }
+
+    pub fn on_stage_cleared(&mut self) {
+        self.update_high_score();
+        self.state = GameState::Won;
     }
 }
