@@ -96,6 +96,7 @@ impl Game {
 
         if self.res.director.state == GameState::Playing {
             systems::system_tick_powerups(&mut self.world, dt);
+            systems::system_animate(&mut self.world, &self.res.anim_db, dt);
             systems::system_player_movement(&mut self.world, &self.res.input, dt);
             systems::system_player_fire(
                 &mut self.world,

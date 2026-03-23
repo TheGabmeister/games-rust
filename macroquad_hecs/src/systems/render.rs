@@ -1,7 +1,7 @@
 use hecs::World;
 use macroquad::prelude::*;
 
-use crate::components::{DrawLayer, Sprite, TextureId, Transform};
+use crate::components::{DrawLayer, Sprite, SpriteRegion, TextureId, Transform};
 use crate::constants::{SCREEN_HEIGHT, SCREEN_WIDTH};
 use crate::managers::{Assets, GameDirector};
 use crate::resources::GameState;
@@ -10,17 +10,18 @@ use crate::resources::GameState;
 pub fn draw(world: &World, assets: &Assets) {
     clear_background(Color::from_hex(0x0a0a1a));
 
-    // Collect drawables: (layer, pos, rot, texture_id, tint)
-    let mut drawables: Vec<(DrawLayer, Vec2, f32, TextureId, Color)> = world
-        .query::<(&DrawLayer, &Transform, &Sprite)>()
+    // Collect drawables: (layer, pos, rot, texture_id, tint, optional source rect)
+    let mut drawables: Vec<(DrawLayer, Vec2, f32, TextureId, Color, Option<Rect>)> = world
+        .query::<(&DrawLayer, &Transform, &Sprite, Option<&SpriteRegion>)>()
         .iter()
-        .map(|(layer, transform, sprite)| {
+        .map(|(layer, transform, sprite, region)| {
             (
                 *layer,
                 transform.pos,
                 transform.rot,
                 sprite.texture,
                 sprite.tint,
+                region.map(|r| r.source),
             )
         })
         .collect();
@@ -28,10 +29,12 @@ pub fn draw(world: &World, assets: &Assets) {
     // Sort by DrawLayer (derives Ord — lower value = drawn first = behind)
     drawables.sort_unstable_by_key(|(layer, ..)| *layer);
 
-    for (_, pos, rot, texture_id, tint) in drawables {
+    for (_, pos, rot, texture_id, tint, source) in drawables {
         let tex = assets.texture(texture_id);
-        let w = tex.width();
-        let h = tex.height();
+        let (w, h) = match source {
+            Some(rect) => (rect.w, rect.h),
+            None => (tex.width(), tex.height()),
+        };
 
         draw_texture_ex(
             tex,
@@ -40,6 +43,7 @@ pub fn draw(world: &World, assets: &Assets) {
             tint,
             DrawTextureParams {
                 dest_size: Some(vec2(w, h)),
+                source,
                 rotation: rot,
                 ..Default::default()
             },

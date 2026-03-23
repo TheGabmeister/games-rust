@@ -3,8 +3,9 @@ use std::collections::HashSet;
 use hecs::Entity;
 use macroquad::prelude::Vec2;
 
+use crate::anim_manifest;
 use crate::events::{EventQueue, EventRegistry};
-use crate::managers::{Assets, GameDirector, MusicManager, SfxManager};
+use crate::managers::{AnimationDb, Assets, GameDirector, MusicManager, SfxManager};
 
 // ---------------------------------------------------------------------------
 // Resources root — grouped by domain to avoid god-object growth.
@@ -12,6 +13,7 @@ use crate::managers::{Assets, GameDirector, MusicManager, SfxManager};
 
 pub struct Resources {
     pub assets: Assets,
+    pub anim_db: AnimationDb,
     pub sfx: SfxManager,
     pub music: MusicManager,
     pub director: GameDirector,
@@ -23,10 +25,12 @@ pub struct Resources {
 
 impl Resources {
     pub fn new(assets: Assets) -> Self {
+        let anim_db = anim_manifest::build_animation_db();
         let sfx = SfxManager::new(&assets);
         let music = MusicManager::new(&assets);
         Self {
             assets,
+            anim_db,
             sfx,
             music,
             director: GameDirector::default(),

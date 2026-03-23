@@ -1,5 +1,7 @@
 //#![windows_subsystem = "windows"] // Suppress the console window on Windows release builds.
 
+mod anim_manifest;
+mod animation;
 mod asset_manifest;
 mod components;
 mod constants;

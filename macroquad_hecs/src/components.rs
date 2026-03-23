@@ -1,5 +1,8 @@
 use macroquad::prelude::*;
 
+use crate::animation::{AnimClipName, SpriteSheetId};
+use crate::managers::AnimationDb;
+
 // ---------------------------------------------------------------------------
 // Spatial
 // ---------------------------------------------------------------------------
@@ -108,6 +111,65 @@ impl Sprite {
 /// Draw ordering: lower = rendered first = behind.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct DrawLayer(pub u8);
+
+/// Per-entity animation playback state. Pair with `SpriteRegion` and a `Sprite`
+/// whose `texture` points to the sprite sheet atlas.
+#[allow(dead_code)]
+pub struct Animator {
+    pub sheet: SpriteSheetId,
+    pub current_clip: AnimClipName,
+    pub current_frame: u16,
+    pub frame_timer: f32,
+    pub finished: bool,
+}
+
+#[allow(dead_code)]
+impl Animator {
+    pub fn new(sheet: SpriteSheetId, clip: AnimClipName, anim_db: &AnimationDb) -> Self {
+        let c = anim_db.clip(sheet, clip);
+        Self {
+            sheet,
+            current_clip: clip,
+            current_frame: 0,
+            frame_timer: c.frame_duration,
+            finished: false,
+        }
+    }
+
+    /// Switch to a different clip. No-op if already playing that clip.
+    pub fn play(&mut self, clip: AnimClipName, anim_db: &AnimationDb) {
+        if self.current_clip == clip && !self.finished {
+            return;
+        }
+        let c = anim_db.clip(self.sheet, clip);
+        self.current_clip = clip;
+        self.current_frame = 0;
+        self.frame_timer = c.frame_duration;
+        self.finished = false;
+    }
+}
+
+/// Source rectangle within a sprite sheet texture. Updated each tick by
+/// `system_animate`. If absent on an entity, the render system draws the
+/// full texture (backward compatible with static sprites).
+#[allow(dead_code)]
+pub struct SpriteRegion {
+    pub source: Rect,
+    pub size: Vec2,
+}
+
+#[allow(dead_code)]
+impl SpriteRegion {
+    pub fn new(sheet: SpriteSheetId, clip: AnimClipName, anim_db: &AnimationDb) -> Self {
+        let c = anim_db.clip(sheet, clip);
+        let rect = anim_db.frame_rect(sheet, c.first_frame);
+        let def = anim_db.sheet(sheet);
+        Self {
+            source: rect,
+            size: vec2(def.frame_width as f32, def.frame_height as f32),
+        }
+    }
+}
 
 // ---------------------------------------------------------------------------
 // Entity tags
