@@ -18,6 +18,11 @@ pub struct PostFxPipeline {
     mat_vignette: Material,
     width: u32,
     height: u32,
+    pub bloom_enabled: bool,
+    pub chromatic_enabled: bool,
+    pub wave_enabled: bool,
+    pub crt_enabled: bool,
+    pub vignette_enabled: bool,
 }
 
 impl PostFxPipeline {
@@ -115,6 +120,11 @@ impl PostFxPipeline {
             mat_bloom_down, mat_blur_h, mat_blur_v, mat_bloom_combine,
             mat_chromatic, mat_wave, mat_crt, mat_vignette,
             width: w, height: h,
+            bloom_enabled: true,
+            chromatic_enabled: true,
+            wave_enabled: true,
+            crt_enabled: true,
+            vignette_enabled: true,
         }
     }
 
@@ -126,40 +136,67 @@ impl PostFxPipeline {
         let half_w = (self.width / 2) as f32;
         let half_h = (self.height / 2) as f32;
 
+        // Track which render target holds the current result.
+        // We alternate between rt_a and rt_b. `in_a` means the latest result is in rt_a.
+        let mut in_a: bool;
+
         // --- BLOOM ---
-        // 1. Downsample + threshold to half-res
-        self.mat_bloom_down.set_uniform("threshold", 0.6_f32);
-        self.fullscreen_pass(&source.texture, &self.rt_bloom_half, &self.mat_bloom_down, half_w, half_h);
-
-        // 2. Horizontal blur
-        self.mat_blur_h.set_uniform("texel_size", 1.0 / half_w);
-        self.fullscreen_pass(&self.rt_bloom_half.texture, &self.rt_bloom_blur, &self.mat_blur_h, half_w, half_h);
-
-        // 3. Vertical blur
-        self.mat_blur_v.set_uniform("texel_size", 1.0 / half_h);
-        self.fullscreen_pass(&self.rt_bloom_blur.texture, &self.rt_bloom_half, &self.mat_blur_v, half_w, half_h);
-
-        // 4. Copy scene to rt_a, then additive bloom on top
-        self.fullscreen_pass_no_material(&source.texture, &self.rt_a, w, h);
-        // Additive combine bloom
-        self.fullscreen_pass(&self.rt_bloom_half.texture, &self.rt_a, &self.mat_bloom_combine, w, h);
+        if self.bloom_enabled {
+            self.mat_bloom_down.set_uniform("threshold", 0.6_f32);
+            self.fullscreen_pass(&source.texture, &self.rt_bloom_half, &self.mat_bloom_down, half_w, half_h);
+            self.mat_blur_h.set_uniform("texel_size", 1.0 / half_w);
+            self.fullscreen_pass(&self.rt_bloom_half.texture, &self.rt_bloom_blur, &self.mat_blur_h, half_w, half_h);
+            self.mat_blur_v.set_uniform("texel_size", 1.0 / half_h);
+            self.fullscreen_pass(&self.rt_bloom_blur.texture, &self.rt_bloom_half, &self.mat_blur_v, half_w, half_h);
+            self.fullscreen_pass_no_material(&source.texture, &self.rt_a, w, h);
+            self.fullscreen_pass(&self.rt_bloom_half.texture, &self.rt_a, &self.mat_bloom_combine, w, h);
+        } else {
+            self.fullscreen_pass_no_material(&source.texture, &self.rt_a, w, h);
+        }
+        in_a = true;
 
         // --- CHROMATIC ABERRATION ---
-        self.mat_chromatic.set_uniform("aberration", 0.003_f32);
-        self.fullscreen_pass(&self.rt_a.texture, &self.rt_b, &self.mat_chromatic, w, h);
+        if self.chromatic_enabled {
+            self.mat_chromatic.set_uniform("aberration", 0.003_f32);
+            if in_a {
+                self.fullscreen_pass(&self.rt_a.texture, &self.rt_b, &self.mat_chromatic, w, h);
+            } else {
+                self.fullscreen_pass(&self.rt_b.texture, &self.rt_a, &self.mat_chromatic, w, h);
+            }
+            in_a = !in_a;
+        }
 
         // --- WAVE DISTORTION ---
-        self.mat_wave.set_uniform("time", time);
-        self.mat_wave.set_uniform("intensity", 0.002_f32);
-        self.fullscreen_pass(&self.rt_b.texture, &self.rt_a, &self.mat_wave, w, h);
+        if self.wave_enabled {
+            self.mat_wave.set_uniform("time", time);
+            self.mat_wave.set_uniform("intensity", 0.002_f32);
+            if in_a {
+                self.fullscreen_pass(&self.rt_a.texture, &self.rt_b, &self.mat_wave, w, h);
+            } else {
+                self.fullscreen_pass(&self.rt_b.texture, &self.rt_a, &self.mat_wave, w, h);
+            }
+            in_a = !in_a;
+        }
 
         // --- CRT ---
-        self.mat_crt.set_uniform("time", time);
-        self.fullscreen_pass(&self.rt_a.texture, &self.rt_b, &self.mat_crt, w, h);
+        if self.crt_enabled {
+            self.mat_crt.set_uniform("time", time);
+            if in_a {
+                self.fullscreen_pass(&self.rt_a.texture, &self.rt_b, &self.mat_crt, w, h);
+            } else {
+                self.fullscreen_pass(&self.rt_b.texture, &self.rt_a, &self.mat_crt, w, h);
+            }
+            in_a = !in_a;
+        }
 
         // --- VIGNETTE + COLOR GRADING (final to screen) ---
-        self.mat_vignette.set_uniform("strength", 0.3_f32);
-        self.draw_to_screen(&self.rt_b.texture, &self.mat_vignette);
+        let final_source = if in_a { &self.rt_a.texture } else { &self.rt_b.texture };
+        if self.vignette_enabled {
+            self.mat_vignette.set_uniform("strength", 0.3_f32);
+            self.draw_to_screen(final_source, &self.mat_vignette);
+        } else {
+            self.draw_to_screen_no_material(final_source);
+        }
     }
 
     fn camera_for_rt(rt: &RenderTarget, w: f32, h: f32) -> Camera2D {
@@ -195,6 +232,14 @@ impl PostFxPipeline {
             ..Default::default()
         });
         gl_use_default_material();
+    }
+
+    fn draw_to_screen_no_material(&self, source: &Texture2D) {
+        set_default_camera();
+        draw_texture_ex(source, 0.0, 0.0, WHITE, DrawTextureParams {
+            dest_size: Some(vec2(screen_width(), screen_height())),
+            ..Default::default()
+        });
     }
 }
 
