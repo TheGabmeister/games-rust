@@ -1,6 +1,9 @@
 use hecs::World;
 
-use crate::events::GameEvent;
+use crate::events::{
+    EnemyDestroyed, GameStarted, PickupCollected, PlayerDied, PowerupCollected, StageCleared,
+};
+use crate::handlers;
 use crate::managers::Assets;
 use crate::prefabs;
 use crate::resources::{GameState, Resources};
@@ -62,9 +65,17 @@ impl Game {
         let mut res = Resources::new(assets);
         let mut world = World::new();
 
+        // Register event handlers (observer pattern).
+        res.event_registry.on::<GameStarted>(handlers::on_game_started);
+        res.event_registry.on::<EnemyDestroyed>(handlers::on_enemy_destroyed);
+        res.event_registry.on::<PlayerDied>(handlers::on_player_died);
+        res.event_registry.on::<PickupCollected>(handlers::on_pickup_collected);
+        res.event_registry.on::<PowerupCollected>(handlers::on_powerup_collected);
+        res.event_registry.on::<StageCleared>(handlers::on_stage_cleared);
+
         spawn_entities(&mut world);
 
-        res.events.emit(GameEvent::GameStarted);
+        res.events.emit(GameStarted);
 
         Self { world, res }
     }
@@ -98,8 +109,9 @@ impl Game {
             // React to events (score, despawns, state transitions)
             systems::system_process_events(
                 &mut self.world,
-                &mut self.res.director,
                 &mut self.res.events,
+                &self.res.event_registry,
+                &mut self.res.director,
                 &mut self.res.despawns,
                 &mut self.res.sfx,
                 &mut self.res.music,
@@ -128,7 +140,7 @@ impl Game {
     fn restart_run(&mut self) {
         self.world.clear();
         spawn_entities(&mut self.world);
-        self.res.events.drain();
+        self.res.events.drain_raw();
         self.res.despawns.clear();
         self.res.director.reset_run();
     }

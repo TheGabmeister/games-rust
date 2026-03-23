@@ -3,7 +3,7 @@ use std::collections::HashSet;
 use hecs::Entity;
 use macroquad::prelude::Vec2;
 
-use crate::events::EventBus;
+use crate::events::{EventQueue, EventRegistry};
 use crate::managers::{Assets, GameDirector, MusicManager, SfxManager};
 
 // ---------------------------------------------------------------------------
@@ -16,7 +16,8 @@ pub struct Resources {
     pub music: MusicManager,
     pub director: GameDirector,
     pub input: InputState,
-    pub events: EventBus,
+    pub events: EventQueue,
+    pub event_registry: EventRegistry,
     pub despawns: DespawnQueue,
 }
 
@@ -30,7 +31,8 @@ impl Resources {
             music,
             director: GameDirector::default(),
             input: InputState::default(),
-            events: EventBus::default(),
+            events: EventQueue::default(),
+            event_registry: EventRegistry::default(),
             despawns: DespawnQueue::default(),
         }
     }

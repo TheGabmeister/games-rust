@@ -7,7 +7,7 @@ use crate::components::{
     ActivePowerups, BoxCollider, CircleCollider, CollisionLayer, Enemy, EnemyKind, Pickup,
     PickupKind, Player, PowerupEffect, PowerupPickup, Projectile, ProjectileOwner, Transform,
 };
-use crate::events::{EventBus, GameEvent};
+use crate::events::{EnemyDestroyed, EventQueue, PickupCollected, PlayerDied, PowerupCollected};
 use crate::resources::DespawnQueue;
 
 #[derive(Clone, Copy)]
@@ -202,7 +202,7 @@ fn match_player_powerup(
 // Main collision system
 // ---------------------------------------------------------------------------
 
-pub fn system_collision(world: &World, events: &mut EventBus, despawns: &mut DespawnQueue) {
+pub fn system_collision(world: &World, events: &mut EventQueue, despawns: &mut DespawnQueue) {
     let mut to_despawn: HashSet<Entity> = HashSet::new();
     let mut player_died_emitted = false;
 
@@ -266,7 +266,7 @@ pub fn system_collision(world: &World, events: &mut EventBus, despawns: &mut Des
         if let Some((bullet_entity, enemy_entity, kind)) = match_player_bullet_enemy(world, a, b) {
             to_despawn.insert(bullet_entity);
             to_despawn.insert(enemy_entity);
-            events.emit(GameEvent::EnemyDestroyed {
+            events.emit(EnemyDestroyed {
                 entity: enemy_entity,
                 kind,
             });
@@ -283,7 +283,7 @@ pub fn system_collision(world: &World, events: &mut EventBus, despawns: &mut Des
             to_despawn.insert(player_entity);
 
             if !player_died_emitted {
-                events.emit(GameEvent::PlayerDied);
+                events.emit(PlayerDied);
                 player_died_emitted = true;
             }
             continue;
@@ -294,7 +294,7 @@ pub fn system_collision(world: &World, events: &mut EventBus, despawns: &mut Des
                 let enemy_entity = if player_entity == a { b } else { a };
                 to_despawn.insert(enemy_entity);
                 if let Some(kind) = enemy_kind(world, enemy_entity) {
-                    events.emit(GameEvent::EnemyDestroyed {
+                    events.emit(EnemyDestroyed {
                         entity: enemy_entity,
                         kind,
                     });
@@ -305,7 +305,7 @@ pub fn system_collision(world: &World, events: &mut EventBus, despawns: &mut Des
             to_despawn.insert(player_entity);
 
             if !player_died_emitted {
-                events.emit(GameEvent::PlayerDied);
+                events.emit(PlayerDied);
                 player_died_emitted = true;
             }
             continue;
@@ -313,7 +313,7 @@ pub fn system_collision(world: &World, events: &mut EventBus, despawns: &mut Des
 
         if let Some((pickup_entity, kind)) = match_player_pickup(world, a, b) {
             to_despawn.insert(pickup_entity);
-            events.emit(GameEvent::PickupCollected {
+            events.emit(PickupCollected {
                 entity: pickup_entity,
                 kind,
             });
@@ -324,7 +324,7 @@ pub fn system_collision(world: &World, events: &mut EventBus, despawns: &mut Des
             match_player_powerup(world, a, b)
         {
             to_despawn.insert(powerup_entity);
-            events.emit(GameEvent::PowerupCollected {
+            events.emit(PowerupCollected {
                 entity: powerup_entity,
                 player: player_entity,
                 effect,
