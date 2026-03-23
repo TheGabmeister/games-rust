@@ -15,7 +15,10 @@ mod input;
 mod laser;
 mod pickup;
 mod player;
+mod particles;
+mod screen_shake;
 mod sprite;
+mod starfield;
 mod transform;
 
 use assets::Assets;

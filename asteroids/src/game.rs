@@ -7,8 +7,11 @@ use crate::collidable::{draw_debug, overlaps};
 use crate::enemy::Enemy;
 use crate::input::InputState;
 use crate::laser::Laser;
+use crate::particles::ParticleSystem;
 use crate::pickup::Pickup;
 use crate::player::Player;
+use crate::screen_shake::ScreenShake;
+use crate::starfield::Starfield;
 
 const MAX_FRAME_DT: f32 = 1.0 / 30.0;
 
@@ -28,6 +31,9 @@ pub struct Game {
     score:         u32,
     respawn_timer: Option<f32>,
     debug:         bool,
+    particles:     ParticleSystem,
+    shake:         ScreenShake,
+    starfield:     Starfield,
 }
 
 impl Game {
@@ -53,11 +59,15 @@ impl Game {
             score:         0,
             respawn_timer: None,
             debug:         false,
+            particles:     ParticleSystem::new(),
+            shake:         ScreenShake::new(),
+            starfield:     Starfield::new(800.0, 600.0, 120),
         }
     }
 
     pub fn update(&mut self, dt: f32, input: &InputState) {
         let dt = dt.clamp(0.0, MAX_FRAME_DT);
+        self.starfield.update(dt);
 
         if input.quit {
             self.should_quit = true;
@@ -69,6 +79,15 @@ impl Game {
 
         if self.player.alive {
             self.player.update(dt, input);
+
+            if input.move_up {
+                self.particles.spawn_thrust(
+                    self.player.transform.x,
+                    self.player.transform.y,
+                    self.player.transform.rot,
+                    2,
+                );
+            }
 
             if input.shoot {
                 let speed = 500.0_f32;
@@ -102,6 +121,11 @@ impl Game {
                 if laser.alive && overlaps(laser, &self.enemy) {
                     laser.alive = false;
                     self.enemy.alive = false;
+                    self.particles.spawn_burst(
+                        self.enemy.transform.x, self.enemy.transform.y,
+                        20, Color::new(0.0, 1.0, 0.7, 1.0), 200.0, 0.6, 4.0,
+                    );
+                    self.shake.add_trauma(0.2);
                 }
             }
         }
@@ -111,6 +135,11 @@ impl Game {
             for laser in &mut self.player_lasers {
                 if laser.alive && asteroid.alive && overlaps(laser, asteroid) {
                     laser.alive = false;
+                    self.particles.spawn_burst(
+                        asteroid.transform.x, asteroid.transform.y,
+                        15, Color::new(0.8, 0.5, 0.2, 1.0), 180.0, 0.5, 3.5,
+                    );
+                    self.shake.add_trauma(0.15);
                     asteroid.alive = false;
                     self.score += 100;
                     play_sound(&self.sfx_bump, PlaySoundParams { looped: false, volume: 1.0 });
@@ -136,6 +165,11 @@ impl Game {
             }
 
             if self.enemy.alive && overlaps(&self.player, &self.enemy) {
+                self.particles.spawn_burst(
+                    self.enemy.transform.x, self.enemy.transform.y,
+                    20, Color::new(0.0, 1.0, 0.7, 1.0), 200.0, 0.6, 4.0,
+                );
+                self.shake.add_trauma(0.2);
                 self.enemy.alive = false;
                 player_killed = true;
             }
@@ -147,6 +181,11 @@ impl Game {
         }
 
         if player_killed {
+            self.particles.spawn_burst(
+                self.player.transform.x, self.player.transform.y,
+                25, Color::new(1.0, 1.0, 0.6, 1.0), 250.0, 0.8, 5.0,
+            );
+            self.shake.add_trauma(0.5);
             self.player.alive = false;
             self.player.lives = self.player.lives.saturating_sub(1);
             play_sound(&self.sfx_lose, PlaySoundParams { looped: false, volume: 1.0 });
@@ -166,16 +205,35 @@ impl Game {
         self.asteroids.retain(|a| a.alive);
         self.player_lasers.retain(|l| l.alive);
         self.enemy_lasers.retain(|l| l.alive);
+
+        self.particles.update(dt);
+        self.shake.update(dt);
     }
 
     pub fn draw(&self) {
         clear_background(BLACK);
+
+        // Background layer (unshaken)
+        self.starfield.draw();
+
+        // Apply screen shake via camera offset
+        let (sx, sy) = self.shake.offset();
+        set_camera(&Camera2D {
+            target: vec2(screen_width() / 2.0 + sx, screen_height() / 2.0 + sy),
+            zoom: vec2(2.0 / screen_width(), -2.0 / screen_height()),
+            ..Default::default()
+        });
+
+        // Game entities (shaken)
         if self.player.alive { self.player.draw(); }
         if self.enemy.alive  { self.enemy.draw(); }
         if self.pickup.alive { self.pickup.draw(); }
         for asteroid in &self.asteroids { asteroid.draw(); }
         for laser in &self.player_lasers { laser.draw(); }
         for laser in &self.enemy_lasers  { laser.draw(); }
+
+        // Particles (shaken, above entities)
+        self.particles.draw();
 
         if self.debug {
             let color = Color::new(0.0, 1.0, 0.0, 0.8);
@@ -186,6 +244,9 @@ impl Game {
             for l in &self.player_lasers { draw_debug(l, color); }
             for l in &self.enemy_lasers  { draw_debug(l, color); }
         }
+
+        // Reset camera for HUD (unshaken)
+        set_default_camera();
 
         draw_text(&format!("Lives: {}", self.player.lives), 10.0, 24.0, 24.0, WHITE);
         draw_text(&format!("Score: {}", self.score), 10.0, 50.0, 24.0, WHITE);
