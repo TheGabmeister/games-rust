@@ -3,7 +3,7 @@ use std::collections::VecDeque;
 use hecs::Entity;
 use hecs::World;
 
-use crate::components::{ActivePowerups, Enemy, PowerupEffect};
+use crate::components::Enemy;
 use crate::events::EventBus;
 use crate::events::GameEvent;
 use crate::managers::{GameDirector, MusicManager, SfxManager};
@@ -47,17 +47,7 @@ pub fn system_process_events(
                 effect,
                 duration,
             } => {
-                if let Ok(mut powerups) = world.get::<&mut ActivePowerups>(player) {
-                    match effect {
-                        PowerupEffect::Bolt => {
-                            powerups.bolt_remaining = powerups.bolt_remaining.max(duration);
-                        }
-                        PowerupEffect::Shield => {
-                            powerups.shield_remaining = powerups.shield_remaining.max(duration);
-                        }
-                    }
-                    sfx.play_sound(crate::events::SfxId::PlayerPowerup);
-                }
+                director.apply_powerup(world, player, effect, duration, sfx);
             }
 
             GameEvent::PlayerDied => {

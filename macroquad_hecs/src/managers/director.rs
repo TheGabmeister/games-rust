@@ -1,6 +1,6 @@
 use hecs::{Entity, World};
 
-use crate::components::{PickupKind, Player, ScoreValue};
+use crate::components::{ActivePowerups, PickupKind, Player, PowerupEffect, ScoreValue};
 use crate::constants::PLAYER_START_LIVES;
 use crate::constants::{PLAYER_MAX_LIVES, SCORE_PICKUP_STAR};
 use crate::events::SfxId;
@@ -89,6 +89,27 @@ impl GameDirector {
         match kind {
             PickupKind::Life => self.update_lives(1),
             PickupKind::Star => self.update_score(SCORE_PICKUP_STAR),
+        }
+    }
+
+    pub fn apply_powerup(
+        &self,
+        world: &World,
+        player: Entity,
+        effect: PowerupEffect,
+        duration: f32,
+        sfx: &SfxManager,
+    ) {
+        if let Ok(mut powerups) = world.get::<&mut ActivePowerups>(player) {
+            match effect {
+                PowerupEffect::Bolt => {
+                    powerups.bolt_remaining = powerups.bolt_remaining.max(duration);
+                }
+                PowerupEffect::Shield => {
+                    powerups.shield_remaining = powerups.shield_remaining.max(duration);
+                }
+            }
+            sfx.play_sound(SfxId::PlayerPowerup);
         }
     }
 
