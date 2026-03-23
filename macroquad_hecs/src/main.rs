@@ -1,9 +1,9 @@
 //#![windows_subsystem = "windows"] // Suppress the console window on Windows release builds.
 #![cfg_attr(debug_assertions, allow(unused))] // Suppress unused-code warnings in debug builds.
 
+mod asset_manifest;
 mod components;
 mod constants;
-mod asset_manifest;
 mod events;
 mod game;
 mod managers;
@@ -32,6 +32,8 @@ async fn main() {
     let mut accumulator = 0.0_f32;
 
     loop {
+        game.capture_input();
+
         let dt = get_frame_time().min(MAX_FRAME_TIME);
         accumulator += dt;
 

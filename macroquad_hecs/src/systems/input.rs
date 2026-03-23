@@ -25,7 +25,7 @@ pub fn system_capture_input(input: &mut InputState) {
 
     input.move_axis = axis;
     input.fire_held = is_key_down(KeyCode::Space);
-    input.confirm_pressed = is_key_pressed(KeyCode::Enter);
-    input.cancel_pressed = is_key_pressed(KeyCode::Escape);
-    input.debug_toggle_pressed = is_key_pressed(KeyCode::F1);
+    input.confirm_pressed |= is_key_pressed(KeyCode::Enter);
+    input.cancel_pressed |= is_key_pressed(KeyCode::Escape);
+    input.debug_toggle_pressed |= is_key_pressed(KeyCode::F1);
 }

@@ -1,11 +1,11 @@
 use std::collections::HashSet;
 
 use hecs::{Entity, World};
-use macroquad::prelude::{vec2, Vec2};
+use macroquad::prelude::{Vec2, vec2};
 
 use crate::components::{
-    ActivePowerup, BoxCollider, Projectile, ProjectileOwner, CircleCollider, CollisionLayer, Enemy,
-    EnemyKind, Pickup, PickupKind, Player, PowerupEffect, Transform,
+    ActivePowerups, BoxCollider, CircleCollider, CollisionLayer, Enemy, EnemyKind, Pickup,
+    PickupKind, Player, PowerupEffect, PowerupPickup, Projectile, ProjectileOwner, Transform,
 };
 use crate::events::{EventBus, GameEvent};
 use crate::resources::DespawnQueue;
@@ -35,7 +35,12 @@ fn overlaps_circle(a_pos: Vec2, a_radius: f32, b_pos: Vec2, b_radius: f32) -> bo
     (a_pos - b_pos).length_squared() <= r * r
 }
 
-fn overlaps_box_circle(box_pos: Vec2, box_half: Vec2, circle_pos: Vec2, circle_radius: f32) -> bool {
+fn overlaps_box_circle(
+    box_pos: Vec2,
+    box_half: Vec2,
+    circle_pos: Vec2,
+    circle_radius: f32,
+) -> bool {
     let min = box_pos - box_half;
     let max = box_pos + box_half;
     let closest = vec2(
@@ -50,9 +55,10 @@ fn overlaps_shapes(a: ColliderParticipant, b: ColliderParticipant) -> bool {
         (ColliderShape::Box { half: a_half }, ColliderShape::Box { half: b_half }) => {
             overlaps_aabb(a.pos, a_half, b.pos, b_half)
         }
-        (ColliderShape::Circle { radius: a_radius }, ColliderShape::Circle { radius: b_radius }) => {
-            overlaps_circle(a.pos, a_radius, b.pos, b_radius)
-        }
+        (
+            ColliderShape::Circle { radius: a_radius },
+            ColliderShape::Circle { radius: b_radius },
+        ) => overlaps_circle(a.pos, a_radius, b.pos, b_radius),
         (ColliderShape::Box { half }, ColliderShape::Circle { radius }) => {
             overlaps_box_circle(a.pos, half, b.pos, radius)
         }
@@ -87,18 +93,29 @@ fn enemy_kind(world: &World, entity: Entity) -> Option<EnemyKind> {
 }
 
 fn bullet_owner(world: &World, entity: Entity) -> Option<ProjectileOwner> {
-    world.get::<&Projectile>(entity).ok().map(|bullet| bullet.owner)
+    world
+        .get::<&Projectile>(entity)
+        .ok()
+        .map(|bullet| bullet.owner)
 }
 
 fn pickup_kind(world: &World, entity: Entity) -> Option<PickupKind> {
     world.get::<&Pickup>(entity).ok().map(|pickup| pickup.kind)
 }
 
-fn powerup_effect(world: &World, entity: Entity) -> Option<PowerupEffect> {
+fn powerup_pickup(world: &World, entity: Entity) -> Option<(PowerupEffect, f32)> {
     world
-        .get::<&ActivePowerup>(entity)
+        .get::<&PowerupPickup>(entity)
         .ok()
-        .map(|powerup| powerup.effect)
+        .map(|powerup| (powerup.effect, powerup.duration))
+}
+
+fn player_has_shield(world: &World, entity: Entity) -> bool {
+    world
+        .get::<&ActivePowerups>(entity)
+        .ok()
+        .map(|powerups| powerups.shield_remaining > 0.0)
+        .unwrap_or(false)
 }
 
 fn match_player_bullet_enemy(
@@ -106,16 +123,16 @@ fn match_player_bullet_enemy(
     a: Entity,
     b: Entity,
 ) -> Option<(Entity, Entity, EnemyKind)> {
-    if bullet_owner(world, a) == Some(ProjectileOwner::Player) {
-        if let Some(kind) = enemy_kind(world, b) {
-            return Some((a, b, kind));
-        }
+    if bullet_owner(world, a) == Some(ProjectileOwner::Player)
+        && let Some(kind) = enemy_kind(world, b)
+    {
+        return Some((a, b, kind));
     }
 
-    if bullet_owner(world, b) == Some(ProjectileOwner::Player) {
-        if let Some(kind) = enemy_kind(world, a) {
-            return Some((b, a, kind));
-        }
+    if bullet_owner(world, b) == Some(ProjectileOwner::Player)
+        && let Some(kind) = enemy_kind(world, a)
+    {
+        return Some((b, a, kind));
     }
 
     None
@@ -146,16 +163,16 @@ fn match_player_enemy(world: &World, a: Entity, b: Entity) -> Option<Entity> {
 }
 
 fn match_player_pickup(world: &World, a: Entity, b: Entity) -> Option<(Entity, PickupKind)> {
-    if is_player(world, a) {
-        if let Some(kind) = pickup_kind(world, b) {
-            return Some((b, kind));
-        }
+    if is_player(world, a)
+        && let Some(kind) = pickup_kind(world, b)
+    {
+        return Some((b, kind));
     }
 
-    if is_player(world, b) {
-        if let Some(kind) = pickup_kind(world, a) {
-            return Some((a, kind));
-        }
+    if is_player(world, b)
+        && let Some(kind) = pickup_kind(world, a)
+    {
+        return Some((a, kind));
     }
 
     None
@@ -165,17 +182,17 @@ fn match_player_powerup(
     world: &World,
     a: Entity,
     b: Entity,
-) -> Option<(Entity, PowerupEffect)> {
-    if is_player(world, a) {
-        if let Some(effect) = powerup_effect(world, b) {
-            return Some((b, effect));
-        }
+) -> Option<(Entity, Entity, PowerupEffect, f32)> {
+    if is_player(world, a)
+        && let Some((effect, duration)) = powerup_pickup(world, b)
+    {
+        return Some((b, a, effect, duration));
     }
 
-    if is_player(world, b) {
-        if let Some(effect) = powerup_effect(world, a) {
-            return Some((a, effect));
-        }
+    if is_player(world, b)
+        && let Some((effect, duration)) = powerup_pickup(world, a)
+    {
+        return Some((a, b, effect, duration));
     }
 
     None
@@ -258,6 +275,11 @@ pub fn system_collision(world: &World, events: &mut EventBus, despawns: &mut Des
 
         if let Some((bullet_entity, player_entity)) = match_enemy_bullet_player(world, a, b) {
             to_despawn.insert(bullet_entity);
+
+            if player_has_shield(world, player_entity) {
+                continue;
+            }
+
             to_despawn.insert(player_entity);
 
             if !player_died_emitted {
@@ -268,6 +290,18 @@ pub fn system_collision(world: &World, events: &mut EventBus, despawns: &mut Des
         }
 
         if let Some(player_entity) = match_player_enemy(world, a, b) {
+            if player_has_shield(world, player_entity) {
+                let enemy_entity = if player_entity == a { b } else { a };
+                to_despawn.insert(enemy_entity);
+                if let Some(kind) = enemy_kind(world, enemy_entity) {
+                    events.emit(GameEvent::EnemyDestroyed {
+                        entity: enemy_entity,
+                        kind,
+                    });
+                }
+                continue;
+            }
+
             to_despawn.insert(player_entity);
 
             if !player_died_emitted {
@@ -286,11 +320,15 @@ pub fn system_collision(world: &World, events: &mut EventBus, despawns: &mut Des
             continue;
         }
 
-        if let Some((powerup_entity, effect)) = match_player_powerup(world, a, b) {
+        if let Some((powerup_entity, player_entity, effect, duration)) =
+            match_player_powerup(world, a, b)
+        {
             to_despawn.insert(powerup_entity);
             events.emit(GameEvent::PowerupCollected {
                 entity: powerup_entity,
+                player: player_entity,
                 effect,
+                duration,
             });
         }
     }

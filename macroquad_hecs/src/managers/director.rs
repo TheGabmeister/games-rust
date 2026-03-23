@@ -3,9 +3,9 @@ use hecs::{Entity, World};
 use crate::components::{PickupKind, Player, ScoreValue};
 use crate::constants::PLAYER_START_LIVES;
 use crate::constants::{PLAYER_MAX_LIVES, SCORE_PICKUP_STAR};
-use crate::prefabs;
-use crate::managers::SfxManager;
 use crate::events::SfxId;
+use crate::managers::SfxManager;
+use crate::prefabs;
 use crate::resources::{DespawnQueue, GameState};
 
 pub struct GameDirector {
@@ -55,7 +55,7 @@ impl GameDirector {
     }
 
     pub fn on_enemy_destroyed(&mut self, world: &World, entity: Entity, sfx: &mut SfxManager) {
-        sfx.play_sound((SfxId::EnemyDestroyed));
+        sfx.play_sound(SfxId::EnemyDestroyed);
         if let Ok(score_value) = world.get::<&ScoreValue>(entity) {
             self.update_score(score_value.0);
         }
@@ -74,7 +74,7 @@ impl GameDirector {
             .collect();
 
         despawns.extend(players);
-        sfx.play_sound((SfxId::PlayerDied));
+        sfx.play_sound(SfxId::PlayerDied);
         self.update_lives(-1);
         if self.lives == 0 {
             self.state = GameState::Lost;

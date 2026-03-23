@@ -81,3 +81,11 @@ pub struct InputState {
     pub cancel_pressed: bool,
     pub debug_toggle_pressed: bool,
 }
+
+impl InputState {
+    pub fn clear_transients(&mut self) {
+        self.confirm_pressed = false;
+        self.cancel_pressed = false;
+        self.debug_toggle_pressed = false;
+    }
+}

@@ -63,22 +63,25 @@ impl Game {
         let mut world = World::new();
 
         spawn_entities(&mut world);
-        
+
         res.events.emit(GameEvent::GameStarted);
 
         Self { world, res }
     }
 
+    pub fn capture_input(&mut self) {
+        systems::system_capture_input(&mut self.res.input);
+    }
+
     /// Fixed-timestep update (called at 60 Hz).
     pub fn update(&mut self, dt: f32) {
-        systems::system_capture_input(&mut self.res.input);
-
         // Debug toggle
         if self.res.input.debug_toggle_pressed {
             self.res.director.debug_mode = !self.res.director.debug_mode;
         }
 
         if self.res.director.state == GameState::Playing {
+            systems::system_tick_powerups(&mut self.world, dt);
             systems::system_player_movement(&mut self.world, &self.res.input, dt);
             systems::system_player_fire(&mut self.world, &self.res.input, &self.res.sfx, dt);
 
@@ -105,6 +108,8 @@ impl Game {
         } else if self.res.input.confirm_pressed {
             self.restart_run();
         }
+
+        self.res.input.clear_transients();
     }
 
     /// Render (called every frame — not fixed-timestep).

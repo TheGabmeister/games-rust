@@ -2,7 +2,7 @@ use hecs::{Entity, World};
 use macroquad::prelude::*;
 
 use crate::components::{
-    ActivePowerup, BoxCollider, CircleCollider, Enemy, Pickup, Player, Projectile,
+    ActivePowerups, BoxCollider, CircleCollider, Enemy, Pickup, Player, PowerupPickup, Projectile,
     ProjectileOwner, Transform,
 };
 
@@ -23,7 +23,7 @@ pub fn system_draw_colliders(world: &World) {
     }
 }
 
-// probes an entity's components one-by-one to figure out what "type" of game object it is, 
+// probes an entity's components one-by-one to figure out what "type" of game object it is,
 // since there's no single name/type field on entities in an ECS.
 fn entity_type_label(world: &World, entity: Entity) -> String {
     if world.get::<&Player>(entity).is_ok() {
@@ -41,8 +41,16 @@ fn entity_type_label(world: &World, entity: Entity) -> String {
     if let Ok(pickup) = world.get::<&Pickup>(entity) {
         return format!("Pickup ({:?})", pickup.kind);
     }
-    if let Ok(powerup) = world.get::<&ActivePowerup>(entity) {
+    if let Ok(powerup) = world.get::<&PowerupPickup>(entity) {
         return format!("Powerup ({:?})", powerup.effect);
+    }
+    if let Ok(powerups) = world.get::<&ActivePowerups>(entity)
+        && (powerups.bolt_remaining > 0.0 || powerups.shield_remaining > 0.0)
+    {
+        return format!(
+            "Player Buffs (bolt {:.1}s, shield {:.1}s)",
+            powerups.bolt_remaining, powerups.shield_remaining
+        );
     }
     "Obstacle".into()
 }

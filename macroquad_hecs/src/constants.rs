@@ -31,6 +31,7 @@ pub const DRAW_UI: u8 = 100;
 // ---------------------------------------------------------------------------
 pub const PLAYER_SPEED: f32 = 200.0;
 pub const PLAYER_FIRE_RATE: f32 = 0.15;
+pub const PLAYER_BOLT_FIRE_RATE: f32 = 0.07;
 pub const PLAYER_BULLET_SPEED: f32 = 500.0;
 pub const PLAYER_START_X: f32 = SCREEN_WIDTH * 0.5;
 pub const PLAYER_START_Y: f32 = SCREEN_HEIGHT - 80.0;
@@ -64,3 +65,9 @@ pub const PLAYER_MAX_LIVES: u32 = 5;
 // Projectile
 // ---------------------------------------------------------------------------
 pub const BULLET_LIFETIME: f32 = 2.0;
+
+// ---------------------------------------------------------------------------
+// Powerups
+// ---------------------------------------------------------------------------
+pub const POWERUP_DURATION_BOLT: f32 = 5.0;
+pub const POWERUP_DURATION_SHIELD: f32 = 5.0;

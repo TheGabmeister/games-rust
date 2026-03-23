@@ -1,9 +1,10 @@
 use std::collections::VecDeque;
 
-use hecs::{Entity, World};
+use hecs::World;
 
-use crate::components::{Projectile, Enemy, PickupKind};
-use crate::events::{EventBus, GameEvent, MusicId, SfxId};
+use crate::components::{ActivePowerups, PowerupEffect};
+use crate::events::EventBus;
+use crate::events::GameEvent;
 use crate::managers::{GameDirector, MusicManager, SfxManager};
 use crate::resources::DespawnQueue;
 
@@ -23,17 +24,31 @@ pub fn system_process_events(
 
     while let Some(event) = events.pop_front() {
         match event {
-
             GameEvent::EnemyDestroyed { entity, kind: _ } => {
                 director.on_enemy_destroyed(world, entity, sfx);
             }
 
-            GameEvent::PickupCollected { entity, kind } => {
+            GameEvent::PickupCollected { entity: _, kind } => {
                 director.apply_pickup_reward(kind);
             }
 
-            GameEvent::PowerupCollected { entity, effect } => {
-
+            GameEvent::PowerupCollected {
+                entity: _,
+                player,
+                effect,
+                duration,
+            } => {
+                if let Ok(mut powerups) = world.get::<&mut ActivePowerups>(player) {
+                    match effect {
+                        PowerupEffect::Bolt => {
+                            powerups.bolt_remaining = powerups.bolt_remaining.max(duration);
+                        }
+                        PowerupEffect::Shield => {
+                            powerups.shield_remaining = powerups.shield_remaining.max(duration);
+                        }
+                    }
+                    sfx.play_sound(crate::events::SfxId::PlayerPowerup);
+                }
             }
 
             GameEvent::PlayerDied => {
@@ -41,12 +56,11 @@ pub fn system_process_events(
             }
 
             GameEvent::GameStarted => {
-                //music.play_music(MusicId::Spaceshooter);
+                //music.play_music(crate::events::MusicId::Spaceshooter);
             }
 
             GameEvent::StageCleared => {
                 director.update_high_score();
-                
             }
         }
     }

@@ -19,6 +19,7 @@ pub fn spawn_player(world: &mut World) -> Entity {
             mask: LAYER_ENEMY | LAYER_ENEMY_BULLET | LAYER_PICKUP,
         },
         Player,
+        ActivePowerups::default(),
         FireTimer::new(PLAYER_FIRE_RATE),
         DrawLayer(DRAW_PLAYER),
     ))
@@ -123,9 +124,9 @@ pub fn spawn_pickup(world: &mut World, kind: PickupKind, pos: Vec2) -> Entity {
 }
 
 pub fn spawn_powerup(world: &mut World, effect: PowerupEffect, pos: Vec2) -> Entity {
-    let texture = match effect {
-        PowerupEffect::Bolt => TextureId::PowerupBolt,
-        PowerupEffect::Shield => TextureId::PowerupShield,
+    let (texture, duration) = match effect {
+        PowerupEffect::Bolt => (TextureId::PowerupBolt, POWERUP_DURATION_BOLT),
+        PowerupEffect::Shield => (TextureId::PowerupShield, POWERUP_DURATION_SHIELD),
     };
 
     world.spawn((
@@ -136,10 +137,7 @@ pub fn spawn_powerup(world: &mut World, effect: PowerupEffect, pos: Vec2) -> Ent
             member: LAYER_PICKUP,
             mask: LAYER_PLAYER,
         },
-        ActivePowerup {
-            effect,
-            duration: 5.0,
-        },
+        PowerupPickup { effect, duration },
         DrawLayer(DRAW_PICKUP),
     ))
 }

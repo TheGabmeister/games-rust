@@ -10,6 +10,17 @@ use crate::resources::DespawnQueue;
 use crate::resources::InputState;
 
 // ---------------------------------------------------------------------------
+// Powerups
+// ---------------------------------------------------------------------------
+
+pub fn system_tick_powerups(world: &mut World, dt: f32) {
+    for active in world.query_mut::<&mut ActivePowerups>() {
+        active.bolt_remaining = (active.bolt_remaining - dt).max(0.0);
+        active.shield_remaining = (active.shield_remaining - dt).max(0.0);
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Player movement
 // ---------------------------------------------------------------------------
 
@@ -39,9 +50,14 @@ pub fn system_player_fire(world: &mut World, input: &InputState, sfx: &SfxManage
     // Two-pass: collect fire info (drops query_mut borrow), then spawn.
     let mut fire_pos: Option<Vec2> = None;
 
-    for (transform, fire_timer, _player) in
-        world.query_mut::<(&Transform, &mut FireTimer, &Player)>()
+    for (transform, fire_timer, active_powerups, _player) in
+        world.query_mut::<(&Transform, &mut FireTimer, &ActivePowerups, &Player)>()
     {
+        fire_timer.cooldown = if active_powerups.bolt_remaining > 0.0 {
+            PLAYER_BOLT_FIRE_RATE
+        } else {
+            PLAYER_FIRE_RATE
+        };
         fire_timer.timer -= dt;
         if input.fire_held && fire_timer.timer <= 0.0 {
             fire_pos = Some(transform.pos);
@@ -132,7 +148,9 @@ pub fn system_cull_offscreen(world: &World, despawns: &mut DespawnQueue) {
     let to_despawn: Vec<Entity> = {
         let mut v = Vec::new();
         // (Entity, &Transform, &Projectile) → yields flat 3-tuple from .iter()
-        for (entity, transform, _bullet) in world.query::<(Entity, &Transform, &Projectile)>().iter() {
+        for (entity, transform, _bullet) in
+            world.query::<(Entity, &Transform, &Projectile)>().iter()
+        {
             let p = transform.pos;
             if p.x < -MARGIN
                 || p.x > SCREEN_WIDTH + MARGIN

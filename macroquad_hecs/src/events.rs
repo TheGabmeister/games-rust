@@ -45,7 +45,9 @@ pub enum GameEvent {
     },
     PowerupCollected {
         entity: Entity,
+        player: Entity,
         effect: PowerupEffect,
+        duration: f32,
     },
     StageCleared,
 }

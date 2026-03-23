@@ -189,9 +189,15 @@ pub enum PowerupEffect {
     Shield, // damage immunity
 }
 
-pub struct ActivePowerup {
+pub struct PowerupPickup {
     pub effect: PowerupEffect,
-    pub duration: f32, // remaining seconds
+    pub duration: f32,
+}
+
+#[derive(Clone, Copy, Debug, Default)]
+pub struct ActivePowerups {
+    pub bolt_remaining: f32,
+    pub shield_remaining: f32,
 }
 
 /// Score awarded when this entity is destroyed.
