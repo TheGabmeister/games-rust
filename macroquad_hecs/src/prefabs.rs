@@ -50,6 +50,7 @@ pub fn spawn_enemy(world: &mut World, kind: EnemyKind, pos: Vec2) -> Entity {
         Transform {
             pos,
             rot: std::f32::consts::PI,
+            scale: 1.0,
         }, // facing down
         Velocity::new(0.0, speed),
         Sprite::new(texture),

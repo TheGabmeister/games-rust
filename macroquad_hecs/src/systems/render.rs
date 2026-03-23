@@ -13,8 +13,8 @@ pub fn draw(world: &World, assets: &Assets, bg: Option<(f32, f32, f32, f32)>) {
         None => clear_background(Color::from_hex(0x0a0a1a)),
     }
 
-    // Collect drawables: (layer, pos, rot, texture_id, tint, optional source rect)
-    let mut drawables: Vec<(DrawLayer, Vec2, f32, TextureId, Color, Option<Rect>)> = world
+    // Collect drawables: (layer, pos, rot, scale, texture_id, tint, optional source rect)
+    let mut drawables: Vec<(DrawLayer, Vec2, f32, f32, TextureId, Color, Option<Rect>)> = world
         .query::<(&DrawLayer, &Transform, &Sprite, Option<&SpriteRegion>)>()
         .iter()
         .map(|(layer, transform, sprite, region)| {
@@ -22,6 +22,7 @@ pub fn draw(world: &World, assets: &Assets, bg: Option<(f32, f32, f32, f32)>) {
                 *layer,
                 transform.pos,
                 transform.rot,
+                transform.scale,
                 sprite.texture,
                 sprite.tint,
                 region.map(|r| r.source),
@@ -32,12 +33,14 @@ pub fn draw(world: &World, assets: &Assets, bg: Option<(f32, f32, f32, f32)>) {
     // Sort by DrawLayer (derives Ord — lower value = drawn first = behind)
     drawables.sort_unstable_by_key(|(layer, ..)| *layer);
 
-    for (_, pos, rot, texture_id, tint, source) in drawables {
+    for (_, pos, rot, scale, texture_id, tint, source) in drawables {
         let tex = assets.texture(texture_id);
-        let (w, h) = match source {
+        let (base_w, base_h) = match source {
             Some(rect) => (rect.w, rect.h),
             None => (tex.width(), tex.height()),
         };
+        let w = base_w * scale;
+        let h = base_h * scale;
 
         draw_texture_ex(
             tex,

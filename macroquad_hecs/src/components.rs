@@ -10,7 +10,8 @@ use crate::managers::AnimationDb;
 #[derive(Clone, Copy, Debug)]
 pub struct Transform {
     pub pos: Vec2,
-    pub rot: f32, // radians, 0 = up
+    pub rot: f32,   // radians, 0 = up
+    pub scale: f32, // uniform scale, 1.0 = original size
 }
 
 impl Transform {
@@ -18,6 +19,7 @@ impl Transform {
         Self {
             pos: vec2(x, y),
             rot: 0.0,
+            scale: 1.0,
         }
     }
 }
