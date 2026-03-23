@@ -1,7 +1,10 @@
-use hecs::World;
+use hecs::{Entity, World};
 use macroquad::prelude::*;
 
-use crate::components::{BoxCollider, CircleCollider, Transform};
+use crate::components::{
+    ActivePowerup, BoxCollider, CircleCollider, Enemy, Pickup, Player, Projectile,
+    ProjectileOwner, Transform,
+};
 
 /// Draw collider wireframes for all entities that have a collider component.
 pub fn system_draw_colliders(world: &World) {
@@ -18,4 +21,58 @@ pub fn system_draw_colliders(world: &World) {
     for (transform, col) in world.query::<(&Transform, &CircleCollider)>().iter() {
         draw_circle_lines(transform.pos.x, transform.pos.y, col.radius, 1.5, YELLOW);
     }
+}
+
+// probes an entity's components one-by-one to figure out what "type" of game object it is, 
+// since there's no single name/type field on entities in an ECS.
+fn entity_type_label(world: &World, entity: Entity) -> String {
+    if world.get::<&Player>(entity).is_ok() {
+        return "Player".into();
+    }
+    if let Ok(enemy) = world.get::<&Enemy>(entity) {
+        return format!("Enemy ({:?})", enemy.kind);
+    }
+    if let Ok(proj) = world.get::<&Projectile>(entity) {
+        return match proj.owner {
+            ProjectileOwner::Player => "Bullet (Player)".into(),
+            ProjectileOwner::Enemy => "Bullet (Enemy)".into(),
+        };
+    }
+    if let Ok(pickup) = world.get::<&Pickup>(entity) {
+        return format!("Pickup ({:?})", pickup.kind);
+    }
+    if let Ok(powerup) = world.get::<&ActivePowerup>(entity) {
+        return format!("Powerup ({:?})", powerup.effect);
+    }
+    "Obstacle".into()
+}
+
+#[cfg(debug_assertions)]
+pub fn system_draw_debug_ui(world: &World) {
+    egui_macroquad::ui(|egui_ctx| {
+        egui_macroquad::egui::Window::new("Entities")
+            .default_pos([10.0, 80.0])
+            .default_size([220.0, 300.0])
+            .resizable(true)
+            .show(egui_ctx, |ui| {
+                ui.label(format!("Total: {}", world.len()));
+                ui.separator();
+
+                let mut entries: Vec<(Entity, String)> = world
+                    .iter()
+                    .map(|entity_ref| {
+                        let e = entity_ref.entity();
+                        let label = entity_type_label(world, e);
+                        (e, label)
+                    })
+                    .collect();
+                entries.sort_by_key(|(e, _)| e.id());
+
+                egui_macroquad::egui::ScrollArea::vertical().show(ui, |ui| {
+                    for (entity, label) in &entries {
+                        ui.label(format!("[{}] {}", entity.id(), label));
+                    }
+                });
+            });
+    });
 }

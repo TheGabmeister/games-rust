@@ -110,13 +110,14 @@ impl Game {
     /// Render (called every frame — not fixed-timestep).
     pub fn draw(&self) {
         render::draw(&self.world, &self.res.assets);
+        render::draw_hud(&self.res.director);
 
         #[cfg(debug_assertions)]
         if self.res.director.debug_mode {
             systems::system_draw_colliders(&self.world);
+            systems::system_draw_debug_ui(&self.world);
+            egui_macroquad::draw();
         }
-
-        render::draw_hud(&self.res.director);
     }
 
     fn restart_run(&mut self) {
