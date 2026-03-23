@@ -29,6 +29,7 @@ pub struct Game {
     sfx_lose:      Sound,
     pub should_quit: bool,
     score:         u32,
+    display_score: f32,
     respawn_timer: Option<f32>,
     debug:         bool,
     particles:     ParticleSystem,
@@ -57,6 +58,7 @@ impl Game {
             sfx_lose:      assets.sfx_lose.clone(),
             should_quit:   false,
             score:         0,
+            display_score: 0.0,
             respawn_timer: None,
             debug:         false,
             particles:     ParticleSystem::new(),
@@ -125,6 +127,7 @@ impl Game {
                         self.enemy.transform.x, self.enemy.transform.y,
                         20, Color::new(0.0, 1.0, 0.7, 1.0), 200.0, 0.6, 4.0,
                     );
+                    self.particles.spawn_flash(self.enemy.transform.x, self.enemy.transform.y, 40.0, 0.2);
                     self.shake.add_trauma(0.2);
                 }
             }
@@ -139,6 +142,7 @@ impl Game {
                         asteroid.transform.x, asteroid.transform.y,
                         15, Color::new(0.8, 0.5, 0.2, 1.0), 180.0, 0.5, 3.5,
                     );
+                    self.particles.spawn_flash(asteroid.transform.x, asteroid.transform.y, 35.0, 0.15);
                     self.shake.add_trauma(0.15);
                     asteroid.alive = false;
                     self.score += 100;
@@ -149,7 +153,7 @@ impl Game {
 
         // Player death collisions
         let mut player_killed = false;
-        if self.player.alive {
+        if self.player.alive && !self.player.is_invincible() {
             for laser in &mut self.enemy_lasers {
                 if laser.alive && overlaps(laser, &self.player) {
                     laser.alive = false;
@@ -185,6 +189,7 @@ impl Game {
                 self.player.transform.x, self.player.transform.y,
                 25, Color::new(1.0, 1.0, 0.6, 1.0), 250.0, 0.8, 5.0,
             );
+            self.particles.spawn_flash(self.player.transform.x, self.player.transform.y, 50.0, 0.25);
             self.shake.add_trauma(0.5);
             self.player.alive = false;
             self.player.lives = self.player.lives.saturating_sub(1);
@@ -206,8 +211,29 @@ impl Game {
         self.player_lasers.retain(|l| l.alive);
         self.enemy_lasers.retain(|l| l.alive);
 
+        // Laser motion trails
+        for laser in &self.player_lasers {
+            self.particles.spawn_trail(
+                laser.transform.x, laser.transform.y,
+                Color::new(0.0, 0.8, 1.0, 1.0),
+            );
+        }
+        for laser in &self.enemy_lasers {
+            self.particles.spawn_trail(
+                laser.transform.x, laser.transform.y,
+                Color::new(1.0, 0.3, 0.3, 1.0),
+            );
+        }
+
         self.particles.update(dt);
         self.shake.update(dt);
+
+        // Animated score counter
+        let target = self.score as f32;
+        self.display_score += (target - self.display_score) * (10.0 * dt).min(1.0);
+        if (self.display_score - target).abs() < 1.0 {
+            self.display_score = target;
+        }
     }
 
     pub fn draw(&self) {
@@ -229,8 +255,18 @@ impl Game {
         if self.enemy.alive  { self.enemy.draw(); }
         if self.pickup.alive { self.pickup.draw(); }
         for asteroid in &self.asteroids { asteroid.draw(); }
-        for laser in &self.player_lasers { laser.draw(); }
-        for laser in &self.enemy_lasers  { laser.draw(); }
+
+        // Lasers with glow effect
+        for laser in &self.player_lasers {
+            draw_circle(laser.transform.x, laser.transform.y, 14.0, Color::new(0.0, 0.6, 1.0, 0.12));
+            draw_circle(laser.transform.x, laser.transform.y, 7.0, Color::new(0.0, 0.8, 1.0, 0.25));
+            laser.draw();
+        }
+        for laser in &self.enemy_lasers {
+            draw_circle(laser.transform.x, laser.transform.y, 14.0, Color::new(1.0, 0.2, 0.2, 0.12));
+            draw_circle(laser.transform.x, laser.transform.y, 7.0, Color::new(1.0, 0.3, 0.3, 0.25));
+            laser.draw();
+        }
 
         // Particles (shaken, above entities)
         self.particles.draw();
@@ -248,19 +284,32 @@ impl Game {
         // Reset camera for HUD (unshaken)
         set_default_camera();
 
+        // Vignette overlay (darkened edges)
+        let sw = screen_width();
+        let sh = screen_height();
+        let v = 80.0; // vignette band width
+        let vc = Color::new(0.0, 0.0, 0.0, 0.4);
+        draw_rectangle(0.0, 0.0, sw, v, vc);         // top
+        draw_rectangle(0.0, sh - v, sw, v, vc);      // bottom
+        draw_rectangle(0.0, v, v, sh - v * 2.0, vc); // left
+        draw_rectangle(sw - v, v, v, sh - v * 2.0, vc); // right
+
         draw_text(&format!("Lives: {}", self.player.lives), 10.0, 24.0, 24.0, WHITE);
-        draw_text(&format!("Score: {}", self.score), 10.0, 50.0, 24.0, WHITE);
+        draw_text(&format!("Score: {}", self.display_score as u32), 10.0, 50.0, 24.0, WHITE);
 
         if !self.player.alive && self.player.lives == 0 {
             let text = "GAME OVER";
-            let size = 64.0;
+            let t = get_time() as f32;
+            let pulse = 0.5 + 0.5 * (t * 3.0).sin(); // pulsing 0..1
+            let size = 64.0 + pulse * 4.0; // subtle size pulse
+            let alpha = 0.6 + pulse * 0.4; // alpha 0.6..1.0
             let dims = measure_text(text, None, size as u16, 1.0);
             draw_text(
                 text,
-                screen_width()  / 2.0 - dims.width / 2.0,
-                screen_height() / 2.0 + dims.height / 2.0,
+                sw / 2.0 - dims.width / 2.0,
+                sh / 2.0 + dims.height / 2.0,
                 size,
-                WHITE,
+                Color::new(1.0, 1.0, 1.0, alpha),
             );
         }
     }

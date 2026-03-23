@@ -13,13 +13,22 @@ struct Particle {
     size: f32,
 }
 
+struct Flash {
+    x: f32,
+    y: f32,
+    max_radius: f32,
+    lifetime: f32,
+    max_lifetime: f32,
+}
+
 pub struct ParticleSystem {
     particles: Vec<Particle>,
+    flashes: Vec<Flash>,
 }
 
 impl ParticleSystem {
     pub fn new() -> Self {
-        Self { particles: Vec::new() }
+        Self { particles: Vec::new(), flashes: Vec::new() }
     }
 
     pub fn update(&mut self, dt: f32) {
@@ -29,6 +38,11 @@ impl ParticleSystem {
             p.lifetime -= dt;
         }
         self.particles.retain(|p| p.lifetime > 0.0);
+
+        for f in &mut self.flashes {
+            f.lifetime -= dt;
+        }
+        self.flashes.retain(|f| f.lifetime > 0.0);
     }
 
     pub fn draw(&self) {
@@ -36,6 +50,13 @@ impl ParticleSystem {
             let t = (p.lifetime / p.max_lifetime).clamp(0.0, 1.0);
             let color = Color::new(p.color.r, p.color.g, p.color.b, t);
             draw_circle(p.x, p.y, p.size * t, color);
+        }
+
+        for f in &self.flashes {
+            let t = (f.lifetime / f.max_lifetime).clamp(0.0, 1.0);
+            let radius = f.max_radius * (1.0 - t); // expands outward
+            let alpha = t * 0.8; // fades as it expands
+            draw_circle(f.x, f.y, radius, Color::new(1.0, 1.0, 1.0, alpha));
         }
     }
 
@@ -65,6 +86,29 @@ impl ParticleSystem {
                 size: sz,
             });
         }
+    }
+
+    pub fn spawn_flash(&mut self, x: f32, y: f32, max_radius: f32, lifetime: f32) {
+        self.flashes.push(Flash {
+            x,
+            y,
+            max_radius,
+            lifetime,
+            max_lifetime: lifetime,
+        });
+    }
+
+    pub fn spawn_trail(&mut self, x: f32, y: f32, color: Color) {
+        self.particles.push(Particle {
+            x,
+            y,
+            vx: 0.0,
+            vy: 0.0,
+            color,
+            lifetime: 0.08,
+            max_lifetime: 0.08,
+            size: 2.0,
+        });
     }
 
     pub fn spawn_thrust(&mut self, x: f32, y: f32, angle: f32, count: usize) {

@@ -12,13 +12,17 @@ impl Sprite {
     }
 
     pub fn draw(&self, t: &Transform) {
+        self.draw_tinted(t, WHITE);
+    }
+
+    pub fn draw_tinted(&self, t: &Transform, color: Color) {
         let w = self.texture.width()  * t.scale;
         let h = self.texture.height() * t.scale;
         draw_texture_ex(
             &self.texture,
             t.x - w / 2.0,
             t.y - h / 2.0,
-            WHITE,
+            color,
             DrawTextureParams {
                 dest_size: Some(vec2(w, h)),
                 rotation:  t.rot,
